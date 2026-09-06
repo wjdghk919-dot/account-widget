@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>방송 HUD 미션정보판 - PRISM 모바일 DISPLAY</title>
+
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    background:transparent;
+    font-family:Arial,sans-serif;
+}
+
+/* =========================================================
+   DISPLAY — CYBER GAME HUD
+========================================================= */
+
+.hud{
+    position:absolute;
+    left:55px;
+    top:85px;
+
+    width:615px;
+    padding:21px 24px 24px;
+
+    box-sizing:border-box;
+
+    color:#fff;
+
+    /* 투명 배경 유지 */
+    background:
+        linear-gradient(180deg, rgba(9,15,24,.88), rgba(7,10,16,.78));
+
+    border:2px solid rgba(73,232,255,.78);
+    border-radius:10px;
+
+    box-shadow:
+        0 0 0 1px rgba(255,55,213,.24),
+        0 0 18px rgba(48,215,255,.12),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -1px 0 rgba(255,55,213,.12);
+
+    overflow:hidden;
+}
+
+/* 상단/하단 모서리 포인트 */
+.hud::before,
+.hud::after{
+    content:"";
+    position:absolute;
+    pointer-events:none;
+}
+
+.hud::before{
+    left:0;
+    top:0;
+    width:110px;
+    height:3px;
+    background:linear-gradient(90deg,#42e8ff,rgba(66,232,255,0));
+    box-shadow:0 0 10px rgba(66,232,255,.45);
+}
+
+.hud::after{
+    right:0;
+    bottom:0;
+    width:120px;
+    height:3px;
+    background:linear-gradient(90deg,rgba(255,48,206,0),#ff48d8);
+    box-shadow:0 0 10px rgba(255,48,216,.38);
+}
+
+/* 상단 */
+.hud-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+
+    height:54px;
+}
+
+.hud-account{
+    color:#50ebff;
+
+    font-size:24px;
+    font-weight:900;
+
+    white-space:nowrap;
+
+    text-transform:none;
+
+    text-shadow:
+        0 0 8px rgba(80,235,255,.38);
+}
+
+.hud-current{
+    min-width:0;
+
+    color:#fff;
+
+    font-size:24px;
+    font-weight:900;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+
+    text-align:right;
+
+    text-shadow:0 0 8px rgba(255,255,255,.16);
+}
+
+/* 롤링 전환 */
+.hud-current.changing{
+    animation:rollChange .38s ease;
+}
+
+@keyframes rollChange{
+    0%{
+        opacity:0;
+        transform:translateY(18px);
+        filter:blur(3px);
+    }
+    55%{
+        opacity:1;
+        transform:translateY(-3px);
+        filter:blur(0);
+    }
+    100%{
+        opacity:1;
+        transform:translateY(0);
+        filter:blur(0);
+    }
+}
+
+.hud-divider{
+    position:relative;
+    height:2px;
+
+    margin:15px 0 18px;
+
+    background:linear-gradient(
+        90deg,
+        rgba(76,228,255,.62),
+        rgba(255,255,255,.14) 55%,
+        rgba(255,66,212,.52)
+    );
+
+    box-shadow:0 0 7px rgba(77,224,255,.16);
+}
+
+/* 중간 공지 */
+.notice-title{
+    margin-bottom:9px;
+
+    color:#58ebff;
+
+    font-size:24px;
+    font-weight:900;
+
+    text-shadow:0 0 8px rgba(88,235,255,.34);
+}
+
+.notice-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.notice-line{
+    color:#b8f7ff;
+
+    font-size:22.5px;
+    line-height:1.15;
+    font-weight:800;
+
+    text-shadow:0 0 5px rgba(83,229,251,.18);
+}
+
+.notice-line::before{
+    content:"▶ ";
+    color:#55e8ff;
+}
+
+/* 하단 참가자 */
+.rank-title{
+    margin-top:21px;
+    margin-bottom:12px;
+
+    color:#ff99e7;
+
+    font-size:24px;
+    font-weight:900;
+
+    text-shadow:0 0 8px rgba(255,108,224,.30);
+}
+
+.rank-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.rank-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    font-size:24px;
+    line-height:1.15;
+    font-weight:900;
+}
+
+.rank-name{
+    color:#fff;
+
+    min-width:0;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.rank-name::before{
+    content:"// ";
+    color:#768696;
+    font-size:.72em;
+}
+
+.rank-value{
+    color:#dffbff;
+    margin-left:18px;
+
+    text-shadow:0 0 6px rgba(94,230,255,.16);
+}
+
+/* 미세한 스캔라인 — 매우 약하게 */
+.hud .notice-list::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:0;
+    bottom:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.018) 0px,
+        rgba(255,255,255,.018) 1px,
+        transparent 1px,
+        transparent 5px
+    );
+    opacity:.22;
+}
+
+
+
+</style>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const HUD_REF = db.ref("hud_mission");
+</script>
+
+</head>
+
+<body>
+
+<!-- =========================================================
+     DISPLAY
+========================================================= -->
+
+<div class="hud">
+
+    <div class="hud-top">
+
+        <div class="hud-account">
+            계좌
+        </div>
+
+        <div id="currentText" class="hud-current">
+            죽밥 ♥ 100,000
+        </div>
+
+    </div>
+
+    <div class="hud-divider"></div>
+
+    <div id="noticeTitle" class="notice-title">
+        현재미션
+    </div>
+
+    <div id="noticeList" class="notice-list"></div>
+
+    <div id="rankTitle" class="rank-title">
+        참가자
+    </div>
+
+    <div id="rankList" class="rank-list"></div>
+
+</div>
+<script>
+const NOTICE_COUNT = 3;
+const RANK_COUNT = 6;
+
+let donations = [{ name:"죽밥", amount:"100000" }];
+let noticeData = ["9회 댄스 미션","9회 노래 미션","클리어하면 보너스"];
+let rankTitleData = "참가자";
+let rankData = [
+    {name:"병태기", value:"114"},
+    {name:"도땡", value:"76"},
+    {name:"국군", value:"13"},
+    {name:"", value:""},
+    {name:"", value:""},
+    {name:"", value:""}
+];
+
+let activeDonations = [];
+let currentDonationIndex = 0;
+let rollingTimer = null;
+
+function formatAmount(value){
+    const raw = String(value ?? "").replace(/,/g,"").trim();
+    const number = Number(raw);
+    if(isNaN(number)) return String(value ?? "");
+    return number.toLocaleString("ko-KR") + "원";
+}
+
+function rebuildActiveDonations(){
+    activeDonations = (Array.isArray(donations) ? donations : [])
+        .filter(item => item && (String(item.name || "").trim() !== "" || String(item.amount || "").trim() !== ""))
+        .map(item => ({
+            name: String(item.name || "").trim() || "후원자",
+            amount: String(item.amount || "").trim() || "0"
+        }));
+}
+
+function showNextDonation(){
+    const currentText = document.getElementById("currentText");
+
+    if(activeDonations.length === 0){
+        currentText.textContent = "후원 대기";
+        return;
+    }
+
+    if(currentDonationIndex >= activeDonations.length){
+        currentDonationIndex = 0;
+    }
+
+    const item = activeDonations[currentDonationIndex];
+
+    currentText.textContent =
+        item.name + " ♥ " + formatAmount(item.amount).replace("원","");
+
+    currentText.classList.remove("changing");
+    void currentText.offsetWidth;
+    currentText.classList.add("changing");
+
+    currentDonationIndex++;
+}
+
+function restartRolling(seconds = 3){
+    clearInterval(rollingTimer);
+    currentDonationIndex = 0;
+    showNextDonation();
+
+    seconds = Number(seconds);
+    if(!Number.isFinite(seconds) || seconds < 1) seconds = 3;
+    if(seconds > 30) seconds = 30;
+
+    rollingTimer = setInterval(showNextDonation, seconds * 1000);
+}
+
+function renderNotices(){
+    const list = document.getElementById("noticeList");
+    list.innerHTML = "";
+
+    (Array.isArray(noticeData) ? noticeData : [])
+        .filter(item => String(item || "").trim() !== "")
+        .slice(0, NOTICE_COUNT)
+        .forEach(item => {
+            const div = document.createElement("div");
+            div.className = "notice-line";
+            div.textContent = item;
+            list.appendChild(div);
+        });
+}
+
+function renderRanks(){
+    const list = document.getElementById("rankList");
+    list.innerHTML = "";
+
+    (Array.isArray(rankData) ? rankData : [])
+        .slice(0, RANK_COUNT)
+        .filter(item => item && String(item.name || "").trim() !== "")
+        .forEach(item => {
+            list.innerHTML += `
+                <div class="rank-row">
+                    <div class="rank-name">${escapeHTML(item.name)}</div>
+                    <div class="rank-value">(${escapeHTML(item.value || "")})</div>
+                </div>
+            `;
+        });
+}
+
+function escapeHTML(value){
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+function applyFirebaseData(data){
+    if(!data) return;
+
+    document.querySelector(".hud-account").textContent =
+        String(data.accountLabel || "계좌");
+
+    donations = Array.isArray(data.donations) ? data.donations : [];
+    noticeData = Array.isArray(data.notices) ? data.notices : [];
+    rankTitleData = String(data.rankTitle || "참가자");
+    rankData = Array.isArray(data.ranks) ? data.ranks : [];
+
+    document.getElementById("noticeTitle").textContent =
+        String(data.noticeTitle || "현재미션");
+
+    document.getElementById("rankTitle").textContent =
+        rankTitleData;
+
+    renderNotices();
+    renderRanks();
+    rebuildActiveDonations();
+    restartRolling(data.rollingSeconds || 3);
+}
+
+HUD_REF.on("value", (snapshot) => {
+    if(snapshot.exists()){
+        applyFirebaseData(snapshot.val());
+    }else{
+        renderNotices();
+        renderRanks();
+        rebuildActiveDonations();
+        restartRolling(3);
+    }
+}, (error) => {
+    console.error("Firebase DISPLAY error:", error);
+});
+
+document.getElementById("rankTitle").textContent = rankTitleData;
+renderNotices();
+renderRanks();
+rebuildActiveDonations();
+restartRolling(3);
+</script>
+
+</body>
+</html>
