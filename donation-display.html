@@ -271,9 +271,29 @@ button {
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+</head>
+
+<body>
+
+<div class="display">
+    <div id="donorAlert" class="donor-alert">
+        <span id="eventText" class="event">~팅커벨</span>
+        <span class="arrow">▶</span>
+        <span id="donorText">김종독</span>
+    </div>
+
+    <div id="accountAlert" class="account-alert">
+        <div class="account-title">계좌 후원</div>
+        <div id="amountText" class="account-amount">62,000</div>
+    </div>
+</div>
+
+
+
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1K8",
   authDomain: "broadcast-widgets.firebaseapp.com",
   databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "broadcast-widgets",
@@ -282,6 +302,7 @@ const firebaseConfig = {
   appId: "1:711117372939:web:470a6f5acf88691a12510e",
   measurementId: "G-080YENY338"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const DONATION_REF = db.ref("donation_alert");
@@ -299,39 +320,55 @@ let data = {
 };
 
 function formatAmount(value) {
-  const n = Number(String(value).replace(/,/g, ""));
-  return isNaN(n) ? String(value) : n.toLocaleString("ko-KR");
+  const number = Number(String(value).replace(/,/g, ""));
+  if (isNaN(number)) return String(value);
+  return number.toLocaleString("ko-KR");
 }
 
 function updateDonor() {
-  document.getElementById("eventText").textContent = data.event ?? "";
-  document.getElementById("donorText").textContent = data.donor ?? "";
+  const eventText = document.getElementById("eventText");
+  const donorText = document.getElementById("donorText");
+  if (!eventText || !donorText) return;
+
+  eventText.textContent = data.event ?? "";
+  donorText.textContent = data.donor ?? "";
 }
 
 function updateAmount(value) {
-  document.getElementById("amountText").textContent = formatAmount(value);
+  const amountText = document.getElementById("amountText");
+  if (!amountText) return;
+  amountText.textContent = formatAmount(value);
 }
 
 function getDuration() {
-  let sec = Number(data.duration);
-  if (!isFinite(sec) || sec < 1) sec = 3;
-  if (sec > 30) sec = 30;
-  return sec * 1000;
+  let seconds = Number(data.duration);
+  if (!isFinite(seconds) || seconds < 1) seconds = 3;
+  if (seconds > 30) seconds = 30;
+  return seconds * 1000;
 }
 
 function animateAmount(target) {
   clearInterval(countTimer);
-  const duration = Math.max(0, Math.min(5000, Number(data.countDuration) || 0));
-  if (!duration) {
+
+  const duration = Math.max(
+    0,
+    Math.min(5000, Number(data.countDuration) || 0)
+  );
+
+  if (duration === 0) {
     updateAmount(target);
     return;
   }
 
   const startTime = performance.now();
+
   countTimer = setInterval(() => {
-    const progress = Math.min((performance.now() - startTime) / duration, 1);
+    const elapsed = performance.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
-    updateAmount(Math.floor(target * eased));
+    const current = Math.floor(target * eased);
+
+    updateAmount(current);
 
     if (progress >= 1) {
       clearInterval(countTimer);
@@ -342,26 +379,40 @@ function animateAmount(target) {
 
 function showDonor() {
   clearTimeout(donorTimer);
+
   updateDonor();
+
   const el = document.getElementById("donorAlert");
+  if (!el) return;
+
   el.classList.add("show");
-  donorTimer = setTimeout(() => el.classList.remove("show"), getDuration());
+
+  donorTimer = setTimeout(() => {
+    el.classList.remove("show");
+  }, getDuration());
 }
 
 function showAccount() {
   clearTimeout(accountTimer);
-  const target = Number(String(data.amount).replace(/,/g, ""));
+
+  const rawAmount = data.amount;
+  const target = Number(String(rawAmount).replace(/,/g, ""));
+
   const el = document.getElementById("accountAlert");
+  if (!el) return;
+
   el.classList.add("show");
 
   if (isNaN(target) || target < 0) {
-    updateAmount(data.amount);
+    updateAmount(rawAmount);
   } else {
     updateAmount(0);
     animateAmount(target);
   }
 
-  accountTimer = setTimeout(() => el.classList.remove("show"), getDuration());
+  accountTimer = setTimeout(() => {
+    el.classList.remove("show");
+  }, getDuration());
 }
 
 function showBoth() {
@@ -373,40 +424,28 @@ function hideAll() {
   clearTimeout(donorTimer);
   clearTimeout(accountTimer);
   clearInterval(countTimer);
-  document.getElementById("donorAlert").classList.remove("show");
-  document.getElementById("accountAlert").classList.remove("show");
+
+  document.getElementById("donorAlert")?.classList.remove("show");
+  document.getElementById("accountAlert")?.classList.remove("show");
 }
 
-DONATION_REF.on("value", snapshot => {
+DONATION_REF.on("value", (snapshot) => {
   const incoming = snapshot.val();
   if (!incoming) return;
 
   data = { ...data, ...incoming };
 
-  if (incoming.trigger === "donor") showDonor();
-  else if (incoming.trigger === "account") showAccount();
-  else if (incoming.trigger === "both") showBoth();
-  else if (incoming.trigger === "hide") hideAll();
+  if (incoming.trigger === "donor") {
+    showDonor();
+  } else if (incoming.trigger === "account") {
+    showAccount();
+  } else if (incoming.trigger === "both") {
+    showBoth();
+  } else if (incoming.trigger === "hide") {
+    hideAll();
+  }
 });
-
-updateDonor();
-updateAmount(data.amount);
 </script>
-
-</head>
-<body>
-
-<div class="display">
-    <div id="donorAlert" class="donor-alert">
-        <span id="eventText" class="event">~팅커벨</span>
-        <span class="arrow">▶</span>
-        <span id="donorText">김종독</span>
-    </div>
-    <div id="accountAlert" class="account-alert">
-        <div class="account-title">계좌 후원</div>
-        <div id="amountText" class="account-amount">62,000</div>
-    </div>
-</div>
 
 </body>
 </html>
