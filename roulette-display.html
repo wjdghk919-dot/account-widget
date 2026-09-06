@@ -2,51 +2,817 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>10칸 고급 룰렛 DISPLAY</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10칸 고급 룰렛 - PC 안정판</title>
 <style>
-html,body{margin:0;padding:0;width:100%;height:100%;background:transparent;font-family:Arial,"Malgun Gothic",sans-serif;overflow:hidden;color:#fff}
+html,body{margin:0;padding:0;width:100%;min-height:100%;background:transparent;font-family:Arial,Helvetica,sans-serif;overflow-x:hidden;overflow-y:auto;color:#fff}
 *{box-sizing:border-box}
-.wrap{position:relative;width:560px;margin:0 auto;padding-top:28px}
-.roulette{position:relative;width:560px;height:560px;margin:0 auto}
-.pointer{position:absolute;z-index:20;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid #f3df9a;filter:drop-shadow(0 3px 4px rgba(0,0,0,.42))}
+.wrap{position:relative;width:100%;max-width:620px;min-height:0;margin:0 auto;padding:10px 0 22px}
+.roulette{position:relative;width:min(560px,92vw);height:min(560px,92vw);margin:0 auto}
+.pointer{position:absolute;z-index:20;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid #f3df9a;filter:drop-shadow(0 3px 4px rgba(0,0,0,.42)) drop-shadow(0 0 7px rgba(243,223,154,.22))}
+.pointer:after{content:"";position:absolute;left:-8px;top:22px;width:16px;height:8px;border-radius:50%;background:rgba(255,255,255,.45);filter:blur(2px)}
 .wheel{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -18deg,#16191e 0deg 36deg,#252a31 36deg 72deg,#16191e 72deg 108deg,#252a31 108deg 144deg,#16191e 144deg 180deg,#252a31 180deg 216deg,#16191e 216deg 252deg,#252a31 252deg 288deg,#16191e 288deg 324deg,#252a31 324deg 360deg);border:10px solid rgba(236,215,150,.92);box-shadow:0 16px 36px rgba(0,0,0,.38),inset 0 0 0 2px rgba(255,255,255,.11),inset 0 0 0 8px rgba(0,0,0,.18);transform:rotate(0deg);transform-origin:50% 50%}
-.wheel:before{content:"";position:absolute;inset:11px;border-radius:50%;border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 0 24px rgba(255,255,255,.05)}
+.wheel:before{content:"";position:absolute;inset:11px;border-radius:50%;border:1px solid rgba(255,255,255,.22);box-shadow:inset 0 0 24px rgba(255,255,255,.05),0 0 0 1px rgba(0,0,0,.24)}
 .wheel:after{content:"";position:absolute;inset:22px;border-radius:50%;border:1px solid rgba(238,216,158,.34);pointer-events:none}
-.label{position:absolute;left:50%;top:50%;width:92px;margin-left:-46px;margin-top:-16px;text-align:center;color:#f7f2df;font-size:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 4px rgba(0,0,0,.55);transform:rotate(var(--angle)) translateY(-205px) rotate(calc(var(--angle)*-1));transform-origin:center center}
-.center{position:absolute;left:50%;top:280px;transform:translate(-50%,-50%);width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#343941 0%,#15181d 55%,#0b0d10 100%);border:7px solid rgba(236,215,150,.92);box-shadow:0 0 0 4px rgba(12,14,18,.75),0 0 20px rgba(238,217,157,.28);display:flex;align-items:center;justify-content:center;z-index:10}
-.centerText{font-size:30px;font-weight:900;color:#fff;text-shadow:0 2px 5px #000;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.quick{position:relative;left:auto;top:auto;transform:none;width:560px;margin:8px auto 0;display:flex;justify-content:center;gap:8px;z-index:50}
-.quick button{width:135px;height:38px;border:0;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer}
-#start{background:#ead596;color:#151515} #reset{background:#2a2e34;color:#fff} #close{background:#2a2e34;color:#fff}
-.hidden{display:none!important}
+.label{
+    position:absolute;
+    left:50%;
+    top:50%;
+
+    width:112px;
+    height:44px;
+
+    margin-left:-56px;
+    margin-top:-22px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    transform:
+        rotate(var(--angle))
+        translateY(-205px);
+
+    transform-origin:center center;
+    pointer-events:none;
+}
+
+.label span{
+    display:block;
+    width:100%;
+
+    text-align:center;
+
+    color:#f7f2df;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-.4px;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+
+    text-shadow:
+        0 2px 4px rgba(0,0,0,.55),
+        0 0 7px rgba(255,255,255,.06);
+
+    transform:none;
+}
+
+
+.label:nth-child(even) span{color:#fff}
+.label:after{content:"";position:absolute;left:50%;bottom:-13px;width:42px;height:1px;transform:translateX(-50%);background:rgba(238,216,158,.35)}
+.center{position:absolute;z-index:10;left:50%;top:50%;width:178px;height:178px;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;border-radius:50%;background:radial-gradient(circle at 35% 28%,rgba(255,255,255,.12),rgba(255,255,255,0) 42%),rgba(16,19,24,.94);border:5px solid rgba(239,216,151,.92);box-shadow:0 9px 20px rgba(0,0,0,.42),inset 0 0 0 2px rgba(255,255,255,.10),inset 0 0 28px rgba(255,255,255,.04),0 0 18px rgba(235,214,151,.11)}
+.center:before{content:"";position:absolute;inset:9px;border-radius:50%;border:1px solid rgba(255,255,255,.16)}
+.centerText{position:relative;z-index:2;width:135px;text-align:center;color:#fffdf3;font-size:32px;font-weight:900;letter-spacing:-1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 7px rgba(0,0,0,.45)}
+.hub{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border-radius:50%;background:#e8d69b;box-shadow:0 0 0 4px rgba(12,14,18,.75),0 0 11px rgba(238,217,157,.28)}
+
+/* ===== probability control: compact & no overflow ===== */
+.control{
+    width:min(560px,92vw);
+    margin:10px auto 0;
+    padding:12px 14px;
+    border-radius:12px;
+    background:rgba(18,21,27,.90);
+    border:1px solid rgba(238,216,158,.34);
+    box-shadow:
+        0 10px 26px rgba(0,0,0,.32),
+        inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.control h2{
+    margin:0 0 8px;
+    font-size:16px;
+    color:#f4e8c3;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:5px 10px;
+}
+
+.field{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    min-width:0;
+}
+
+.field label{
+    width:42px;
+    flex:none;
+    color:#a9a9ad;
+    font-size:10px;
+}
+
+.field input{
+    flex:1;
+    min-width:0;
+    height:28px;
+    padding:0 7px;
+    border:1px solid #555a62;
+    border-radius:5px;
+    background:#0d1015;
+    color:#fff;
+    font-size:12px;
+    outline:none;
+}
+
+.field input:focus{
+    border-color:#dcc98d;
+}
+
+.slot-field{
+    gap:4px;
+}
+
+.slot-field .slotInput{
+    flex:1 1 auto;
+    min-width:0;
+}
+
+.probInput{
+    width:44px !important;
+    flex:0 0 44px !important;
+    text-align:center;
+    padding:0 3px !important;
+    font-size:11px !important;
+}
+
+.prob-unit{
+    width:8px;
+    flex:0 0 8px;
+    color:#aaa;
+    font-size:10px;
+    text-align:center;
+}
+
+.prob-total{
+    margin-top:6px;
+    min-height:16px;
+    color:#ff9e93;
+    font-size:10px;
+    font-weight:900;
+}
+
+.prob-total.ok{
+    color:#bfe88b;
+}
+
+.buttons{
+    display:flex;
+    gap:6px;
+    flex-wrap:nowrap;
+    margin-top:7px;
+}
+
+button{
+    height:32px;
+    padding:0 14px;
+    border:0;
+    border-radius:6px;
+    font-size:11px;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.note{
+    margin-top:6px;
+    color:#777d84;
+    font-size:9px;
+    line-height:1.25;
+}
+
+@media (max-width:600px){
+    .wrap{
+        width:100%;
+        padding:8px 0 20px;
+    }
+    .roulette{
+        width:92vw;
+        height:92vw;
+        max-width:none;
+        max-height:none;
+    }
+    .label{
+        transform:
+            rotate(var(--angle))
+            translateY(-33vw);
+    }
+    .label span{
+        transform:none;
+    }
+    .center{
+        width:29vw;
+        height:29vw;
+        min-width:132px;
+        min-height:132px;
+        max-width:178px;
+        max-height:178px;
+    }
+    .centerText{
+        width:24vw;
+        max-width:135px;
+        font-size:clamp(24px,5.8vw,32px);
+    }
+    .hub{width:18px;height:18px}
+    .control{
+        width:92vw;
+        padding:10px 10px;
+    }
+    .grid{
+        grid-template-columns:1fr;
+        gap:5px;
+    }
+    .buttons{
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+    }
+}
+@media (max-width:380px){
+    .roulette{width:90vw;height:90vw}
+    .label{transform:rotate(var(--angle)) translateY(-32vw)}
+    .label span{transform:none}
+    .center{width:28vw;height:28vw;min-width:124px;min-height:124px}
+    .centerText{font-size:clamp(22px,5.6vw,30px)}
+}
+/* ===== RESULT ACTION ===== */
+.centerText{
+    transition:transform .16s ease, filter .16s ease, text-shadow .16s ease;
+}
+
+.center.result-pop .centerText{
+    animation:resultPop .65s cubic-bezier(.18,.88,.28,1.25);
+}
+
+.center.result-pop{
+    animation:centerGlow .65s ease;
+}
+
+@keyframes resultPop{
+    0%{
+        transform:scale(.72);
+        opacity:.35;
+        filter:blur(4px);
+    }
+    48%{
+        transform:scale(1.16);
+        opacity:1;
+        filter:blur(0);
+    }
+    72%{
+        transform:scale(.96);
+    }
+    100%{
+        transform:scale(1);
+        opacity:1;
+    }
+}
+
+@keyframes centerGlow{
+    0%{
+        box-shadow:
+            0 9px 20px rgba(0,0,0,.42),
+            inset 0 0 0 2px rgba(255,255,255,.10),
+            inset 0 0 28px rgba(255,255,255,.04),
+            0 0 18px rgba(235,214,151,.11);
+    }
+    40%{
+        box-shadow:
+            0 10px 24px rgba(0,0,0,.42),
+            inset 0 0 0 2px rgba(255,255,255,.16),
+            inset 0 0 32px rgba(255,255,255,.08),
+            0 0 38px rgba(239,216,151,.42);
+    }
+    100%{
+        box-shadow:
+            0 9px 20px rgba(0,0,0,.42),
+            inset 0 0 0 2px rgba(255,255,255,.10),
+            inset 0 0 28px rgba(255,255,255,.04),
+            0 0 18px rgba(235,214,151,.11);
+    }
+}
+
+.result-flash{
+    animation:resultFlash .55s ease;
+}
+
+@keyframes resultFlash{
+    0%{opacity:0}
+    35%{opacity:1}
+    100%{opacity:0}
+}
+
+.sound-status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:7px;
+    color:#aaa;
+    font-size:10px;
+}
+
+.sound-status input{
+    width:15px;
+    height:15px;
+    margin:0;
+    flex:none;
+}
+
+
+/* ===== PHONE QUICK BUTTONS ===== */
+.quickButtons{
+    width:min(420px,78vw);
+    margin:7px auto 0;
+    display:flex;
+    gap:7px;
+    justify-content:center;
+}
+.quickButtons button{
+    height:38px;
+    flex:1;
+    max-width:150px;
+    border-radius:8px;
+    border:1px solid rgba(238,216,158,.45);
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.3px;
+}
+.quickStart{
+    background:linear-gradient(180deg,#f3df9a,#c8a75a);
+    color:#11151a;
+    box-shadow:0 5px 14px rgba(0,0,0,.28);
+}
+.quickReset{
+    background:rgba(33,36,43,.94);
+    color:#f7f2df;
+    box-shadow:0 5px 14px rgba(0,0,0,.24);
+}
+.quickEdit{
+    background:rgba(16,19,24,.92);
+    color:#f4e8c3;
+}
+@media (max-width:600px){
+    .quickButtons{width:88vw;max-width:360px}
+    .quickButtons button{
+        height:40px;
+        min-width:0;
+        padding:0 8px;
+        font-size:11px;
+    }
+}
+
+
+.centerText{transition:transform .18s ease,filter .18s ease,text-shadow .18s ease}
+.center.result-pop .centerText{
+    animation:resultTextImpact .9s cubic-bezier(.16,.84,.22,1.12);
+}
+.center.result-pop{
+    animation:centerImpact .9s ease;
+}
+.center.result-pop:after{
+    content:"";
+    position:absolute;
+    inset:-14px;
+    border-radius:50%;
+    border:2px solid rgba(255,240,180,.85);
+    opacity:0;
+    animation:resultRing .8s ease-out;
+}
+.label.winner{
+    z-index:30;
+    filter:drop-shadow(0 0 8px rgba(243,223,154,.55));
+}
+.label.winner span{
+    animation:winnerTextImpact .85s cubic-bezier(.16,.84,.22,1.08);
+}
+@keyframes resultTextImpact{
+    0%{transform:scale(.62);opacity:0;filter:blur(7px)}
+    30%{transform:scale(1.28);opacity:1;filter:blur(0)}
+    55%{transform:scale(.90)}
+    76%{transform:scale(1.08)}
+    100%{transform:scale(1)}
+}
+@keyframes winnerTextImpact{
+    0%{transform:scale(.82)}
+    30%{transform:scale(1.26);text-shadow:0 0 22px rgba(255,241,174,.98),0 0 42px rgba(255,241,174,.5)}
+    58%{transform:scale(.94)}
+    100%{transform:scale(1);text-shadow:0 2px 4px rgba(0,0,0,.55),0 0 7px rgba(255,255,255,.07)}
+}
+@keyframes centerImpact{
+    0%{box-shadow:0 9px 20px rgba(0,0,0,.42),inset 0 0 0 2px rgba(255,255,255,.10),inset 0 0 28px rgba(255,255,255,.04),0 0 18px rgba(235,214,151,.11)}
+    35%{box-shadow:0 12px 28px rgba(0,0,0,.45),inset 0 0 0 3px rgba(255,255,255,.23),inset 0 0 42px rgba(255,255,255,.12),0 0 62px rgba(255,224,145,.82)}
+    100%{box-shadow:0 9px 20px rgba(0,0,0,.42),inset 0 0 0 2px rgba(255,255,255,.10),inset 0 0 28px rgba(255,255,255,.04),0 0 18px rgba(235,214,151,.11)}
+}
+@keyframes resultRing{
+    0%{transform:scale(.76);opacity:0}
+    18%{opacity:1}
+    100%{transform:scale(1.28);opacity:0}
+}
+
+.toggle{display:none}
+
+@media (max-width:600px){
+    .control{
+        display:block !important;
+        width:92vw;
+        margin:9px auto 0;
+        padding:10px;
+    }
+    .control h2{
+        font-size:15px;
+        margin-bottom:7px;
+    }
+    .grid{
+        grid-template-columns:1fr;
+        gap:5px;
+    }
+    .field input{
+        height:30px;
+        font-size:12px;
+    }
+    .buttons{
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:5px;
+    }
+    .buttons button{
+        min-width:0;
+        padding:0 6px;
+    }
+    .quickButtons{
+        margin-bottom:5px;
+    }
+}
+
+
+/* ===== CLEAN PLAY MODE ===== */
+.controlToggleFixed{
+    position:fixed;
+    z-index:100;
+    top:10px;
+    right:10px;
+    height:32px;
+    min-width:88px;
+    padding:0 12px;
+    border:1px solid rgba(238,216,158,.5);
+    border-radius:7px;
+    background:rgba(16,19,24,.9);
+    color:#f4e8c3;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.3px;
+    cursor:pointer;
+    box-shadow:0 5px 16px rgba(0,0,0,.25);
+}
+body.play-mode .wrap{
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:42px 0 18px;
+}
+body.play-mode .roulette{
+    width:min(560px,92vw);
+    height:min(560px,92vw);
+    flex:none;
+}
+body.play-mode .quickButtons{
+    margin-top:8px;
+}
+body.play-mode .control{
+    display:none !important;
+}
+
+@media (max-width:600px){
+    body.play-mode .wrap{
+        min-height:100svh;
+        padding:42px 0 18px;
+    }
+    body.play-mode .roulette{
+        width:92vw;
+        height:92vw;
+    }
+    body.play-mode .quickButtons{
+        width:72vw;
+        max-width:300px;
+        margin-top:8px;
+    }
+}
+
+
+/* ===== PLAYER BUTTONS: FORCE VISIBLE ===== */
+body.play-mode .quickButtons{
+    display:flex !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    position:relative !important;
+    z-index:200 !important;
+    width:min(88vw,360px) !important;
+    margin:10px auto 0 !important;
+    pointer-events:auto !important;
+}
+body.play-mode .quickButtons button{
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+}
+body.play-mode .quickStart,
+body.play-mode .quickReset,
+body.play-mode .quickEdit{
+    display:block !important;
+}
+body.play-mode .control,
+body.play-mode .toggle{
+    display:none !important;
+}
+
+@media (max-width:600px){
+    body.play-mode .quickButtons{
+        width:88vw !important;
+        max-width:360px !important;
+        gap:6px !important;
+    }
+    body.play-mode .quickButtons button{
+        flex:1 1 0 !important;
+        min-width:0 !important;
+        height:42px !important;
+        padding:0 4px !important;
+        font-size:11px !important;
+    }
+}
+
+
+.controlToggleFixed{
+    position:fixed !important;
+    z-index:9999 !important;
+    display:block !important;
+    visibility:visible !important;
+}
+
+
+/* ===== FINAL PLAY LAYOUT ===== */
+body.play-mode .wrap{
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:24px 0 22px;
+}
+body.play-mode .roulette{
+    flex:0 0 auto;
+}
+body.play-mode .quickButtons{
+    flex:0 0 auto;
+    display:flex !important;
+    visibility:visible !important;
+}
+@media (max-width:600px){
+    body.play-mode .wrap{
+        min-height:100svh;
+        padding:22px 0 18px;
+    }
+    body.play-mode .quickButtons{
+        width:88vw !important;
+        max-width:360px !important;
+        gap:6px !important;
+        margin-top:9px !important;
+    }
+    body.play-mode .quickButtons button{
+        flex:1 1 0 !important;
+        min-width:0 !important;
+        height:42px !important;
+        padding:0 4px !important;
+        font-size:11px !important;
+    }
+}
+
+
+/* =========================================================
+   PC STABLE LAYOUT v02
+   - Play: wheel centered + player buttons below
+   - Edit: wheel left + CONTROL panel right
+   ========================================================= */
+
+/* Remove any legacy fixed control button / legacy mobile behavior. */
+.controlToggleFixed{display:none !important;}
+.toggle{display:none !important;}
+
+body{
+    overflow:hidden !important;
+}
+
+.wrap{
+    position:relative !important;
+    width:980px !important;
+    max-width:none !important;
+    height:760px !important;
+    min-height:760px !important;
+    margin:0 auto !important;
+    padding:0 !important;
+}
+
+/* Play screen */
+body.play-mode .wrap{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:0 !important;
+}
+
+body.play-mode .roulette{
+    width:560px !important;
+    height:560px !important;
+    flex:0 0 560px !important;
+    margin:0 !important;
+}
+
+body.play-mode .quickButtons{
+    display:flex !important;
+    width:560px !important;
+    max-width:none !important;
+    margin:12px 0 0 !important;
+    gap:8px !important;
+    flex:0 0 auto !important;
+}
+
+body.play-mode .quickButtons button{
+    flex:0 0 130px !important;
+    width:130px !important;
+    max-width:none !important;
+    height:40px !important;
+    margin:0 !important;
+}
+
+/* Control hidden during play. */
+body.play-mode .control{
+    display:none !important;
+}
+
+/* Edit screen: two-column layout. */
+body:not(.play-mode) .wrap{
+    display:grid !important;
+    grid-template-columns:560px 380px !important;
+    column-gap:28px !important;
+    align-items:center !important;
+    justify-content:center !important;
+}
+
+body:not(.play-mode) .roulette{
+    width:560px !important;
+    height:560px !important;
+    margin:0 !important;
+}
+
+body:not(.play-mode) .control{
+    display:block !important;
+    width:380px !important;
+    max-width:none !important;
+    max-height:680px !important;
+    overflow:auto !important;
+    margin:0 !important;
+    padding:16px !important;
+}
+
+body:not(.play-mode) .quickButtons{
+    position:absolute !important;
+    left:0 !important;
+    bottom:28px !important;
+    width:560px !important;
+    max-width:none !important;
+    margin:0 !important;
+    display:flex !important;
+    justify-content:center !important;
+    gap:8px !important;
+    z-index:50 !important;
+}
+
+body:not(.play-mode) .quickButtons button{
+    flex:0 0 130px !important;
+    width:130px !important;
+    max-width:none !important;
+}
+
+/* Clean PC control spacing. */
+.control h2{
+    font-size:17px !important;
+    margin:0 0 10px !important;
+}
+.grid{
+    grid-template-columns:1fr 1fr !important;
+    gap:7px 10px !important;
+}
+.field input{
+    height:30px !important;
+}
+.buttons{
+    display:flex !important;
+    gap:7px !important;
+}
+.buttons button{
+    flex:1 !important;
+    min-width:0 !important;
+}
+
+/* Wheel label positions stay exactly upright. */
+.label{
+    transform:rotate(var(--angle)) translateY(-205px) !important;
+}
+.label span{
+    transform:none !important;
+}
+
+/* PC button styling */
+.quickStart{
+    background:linear-gradient(180deg,#f3df9a,#c8a75a) !important;
+    color:#11151a !important;
+    box-shadow:0 5px 14px rgba(0,0,0,.28),0 0 16px rgba(243,223,154,.12) !important;
+}
+.quickReset{
+    background:rgba(33,36,43,.96) !important;
+    color:#f7f2df !important;
+}
+.quickEdit{
+    background:rgba(16,19,24,.96) !important;
+    color:#f4e8c3 !important;
+}
+
+@media (max-width:1000px) and (min-width:601px){
+    .wrap{
+        transform:scale(.92) !important;
+        transform-origin:top center !important;
+    }
+}
+
+/* ===== FIREBASE DISPLAY MODE ===== */
+#control{display:none !important;}
 </style>
 </head>
 <body>
-<div class="wrap" id="wrap">
+<div class="wrap">
+<button class="toggle hide" id="toggleButton" onclick="toggleControl()">HIDE CONTROL</button>
 <div class="roulette">
 <div class="pointer"></div>
 <div class="wheel" id="wheel">
-<div class="label" style="--angle:0deg">1</div><div class="label" style="--angle:36deg">2</div>
-<div class="label" style="--angle:72deg">3</div><div class="label" style="--angle:108deg">4</div>
-<div class="label" style="--angle:144deg">5</div><div class="label" style="--angle:180deg">6</div>
-<div class="label" style="--angle:216deg">7</div><div class="label" style="--angle:252deg">8</div>
-<div class="label" style="--angle:288deg">9</div><div class="label" style="--angle:324deg">10</div>
+<div class="label" style="--angle:0deg"><span>1</span></div>
+<div class="label" style="--angle:36deg"><span>2</span></div>
+<div class="label" style="--angle:72deg"><span>3</span></div>
+<div class="label" style="--angle:108deg"><span>4</span></div>
+<div class="label" style="--angle:144deg"><span>5</span></div>
+<div class="label" style="--angle:180deg"><span>6</span></div>
+<div class="label" style="--angle:216deg"><span>7</span></div>
+<div class="label" style="--angle:252deg"><span>8</span></div>
+<div class="label" style="--angle:288deg"><span>9</span></div>
+<div class="label" style="--angle:324deg"><span>10</span></div>
 </div>
 <div class="center"><div class="centerText" id="centerText">룰렛</div></div>
+<div class="hub"></div>
 </div>
-<div class="quick" id="quick">
-<button id="start" onclick="sendStart()">START</button>
-<button id="reset" onclick="sendReset()">RESET</button>
-<button id="close" onclick="closeButtons()">CLOSE</button>
+
+<div class="quickButtons" id="quickButtons">
+<button class="quickStart" id="quickStart" onclick="spin()">START</button>
+<button class="quickReset" id="quickReset" onclick="resetWheel()">RESET</button>
+<button class="quickEdit" id="editButton" onclick="toggleControl()">CLOSE</button>
+</div>
+
+<div class="control" id="control">
+<h2>10칸 룰렛 CONTROL</h2>
+<div class="grid">
+<div class="field"><label>중앙 문구</label><input id="centerInput" type="text" maxlength="6" value="룰렛"></div>
+<div class="field"><label>회전시간</label><input type="text" value="5초 고정" disabled></div>
+<div class="field"><label>사운드</label><div class="sound-status"><input id="soundInput" type="checkbox" checked><span>ON</span></div></div>
+<div class="field slot-field"><label>1번</label><input class="slotInput" type="text" maxlength="8" value="1"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>2번</label><input class="slotInput" type="text" maxlength="8" value="2"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>3번</label><input class="slotInput" type="text" maxlength="8" value="3"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>4번</label><input class="slotInput" type="text" maxlength="8" value="4"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>5번</label><input class="slotInput" type="text" maxlength="8" value="5"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>6번</label><input class="slotInput" type="text" maxlength="8" value="6"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>7번</label><input class="slotInput" type="text" maxlength="8" value="7"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>8번</label><input class="slotInput" type="text" maxlength="8" value="8"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>9번</label><input class="slotInput" type="text" maxlength="8" value="9"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>10번</label><input class="slotInput" type="text" maxlength="8" value="10"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+</div>
+<div class="prob-total" id="probTotal">확률 합계: 100%</div>
+<div class="buttons">
+<button class="apply" onclick="applySettings()">APPLY</button>
+<button class="start" id="startButton" onclick="spin()">START</button>
+<button class="reset" onclick="resetWheel()">RESET</button>
+</div>
+<div class="note">각 칸 확률 설정 · 합계 100% · START 후 5초 회전 · 결과 효과음 + 은은한 배경음</div>
 </div>
 </div>
+
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  apiKey: "AIzaSyBDZi7sRmUfhC8Mw8MkDiUsaQnK1r8",
   authDomain: "broadcast-widgets.firebaseapp.com",
   databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "broadcast-widgets",
@@ -56,62 +822,560 @@ const firebaseConfig = {
   measurementId: "G-080YENY338"
 };
 firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-const wheel=document.getElementById("wheel");
-const centerText=document.getElementById("centerText");
-const labels=[...document.querySelectorAll(".label")];
-let currentRotation=0,spinning=false;
-let settings={center:"룰렛",sound:"ON",slots:Array.from({length:10},(_,i)=>({label:String(i+1),prob:10}))};
-function applySettings(s){
- settings=s||settings;
- centerText.textContent=settings.center||"룰렛";
- if(Array.isArray(settings.slots))settings.slots.forEach((x,i)=>{if(x)labels[i].textContent=x.label??String(i+1)});
-}
-function pickWinner(){
- const slots=settings.slots||[];
- let total=slots.reduce((a,x)=>a+Math.max(0,Number(x?.prob)||0),0);
- if(total<=0)return Math.floor(Math.random()*10);
- let r=Math.random()*total;
- for(let i=0;i<10;i++){r-=Math.max(0,Number(slots[i]?.prob)||0);if(r<0)return i;}
- return 9;
-}
-function doSpin(){
- if(spinning)return;
- spinning=true;
- document.getElementById("start").disabled=true;
- const winner=pickWinner(), step=36;
- const target=((-(winner*step))%360+360)%360;
- const current=((currentRotation%360)+360)%360;
- let delta=target-current;if(delta<0)delta+=360;
- const turns=8+Math.floor(Math.random()*4);
- const finalRotation=currentRotation+turns*360+delta;
- wheel.style.transition="transform 5s cubic-bezier(0.10,0.74,0.16,1)";
- wheel.style.transform="rotate("+finalRotation+"deg)";
- currentRotation=finalRotation;
- setTimeout(()=>{spinning=false;document.getElementById("start").disabled=false;centerText.textContent=labels[winner].textContent.trim()||"결과";},5050);
-}
-function doReset(){
- if(spinning)return;
- wheel.style.transition="none";currentRotation=0;wheel.style.transform="rotate(0deg)";
- centerText.textContent=settings.center||"룰렛";
-}
-function sendStart(){
-  // DISPLAY는 확률 입력창을 가지고 있지 않으므로
-  // 확률 검사를 하지 않는다. CONTROL에서 저장된 설정을 사용한다.
-  db.ref("roulette_10/command").set({
-    type:"start",
-    at:Date.now()
-  });
-}
-function sendReset(){db.ref("roulette_10/command").set({type:"reset",at:Date.now()})}
-function closeButtons(){document.getElementById("quick").classList.add("hidden")}
-db.ref("roulette_10/settings").on("value",s=>applySettings(s.val()));
-let lastCommand=0;
-db.ref("roulette_10/command").on("value",s=>{
- const c=s.val();if(!c||c.at===lastCommand)return;lastCommand=c.at;
- if(c.type==="start")doSpin(); else if(c.type==="reset")doReset();
-});
-applySettings(settings);
+const db = firebase.database();
 </script>
+
+<script>
+const SLOT_COUNT = 10;
+const STEP = 36;
+
+let currentRotation = 0;
+let spinning = false;
+let audioContext = null;
+
+const wheel = document.getElementById("wheel");
+const center = document.querySelector(".center");
+const centerText = document.getElementById("centerText");
+const centerInput = document.getElementById("centerInput");
+const startButton = document.getElementById("startButton");
+const labels = [...document.querySelectorAll(".label")];
+const slotInputs = [...document.querySelectorAll(".slotInput")];
+const probInputs = [...document.querySelectorAll(".probInput")];
+const probTotal = document.getElementById("probTotal");
+const soundInput = document.getElementById("soundInput");
+const control = document.getElementById("control");
+const quickStartButton = document.getElementById("quickStart");
+const toggleButton = document.getElementById("toggleButton");
+
+function applySettings(){
+    centerText.textContent =
+        centerInput.value.trim() || "룰렛";
+
+    slotInputs.forEach((input, index) => {
+        const label = labels[index];
+        const span = label.querySelector("span");
+
+        if(span){
+            span.textContent =
+                input.value.trim() || String(index + 1);
+        }else{
+            label.textContent =
+                input.value.trim() || String(index + 1);
+        }
+    });
+
+    validateProbabilities();
+}
+
+function getProbabilities(){
+    return probInputs.map(input => {
+        const value = Number(input.value);
+
+        if(!Number.isFinite(value) || value < 0){
+            return 0;
+        }
+
+        return Math.min(value, 100);
+    });
+}
+
+function validateProbabilities(){
+    const probabilities = getProbabilities();
+
+    const total = probabilities.reduce(
+        (sum, value) => sum + value,
+        0
+    );
+
+    const roundedTotal =
+        Math.round(total * 10) / 10;
+
+    probTotal.textContent =
+        "확률 합계: " +
+        roundedTotal.toLocaleString("ko-KR") +
+        "%";
+
+    const valid =
+        Math.abs(total - 100) < 0.0001;
+
+    probTotal.classList.toggle("ok", valid);
+
+    return valid;
+}
+
+function pickWeightedWinner(){
+    const probabilities = getProbabilities();
+
+    const randomValue = Math.random() * 100;
+
+    let cumulative = 0;
+
+    for(let i = 0; i < SLOT_COUNT; i++){
+        cumulative += probabilities[i];
+
+        if(randomValue < cumulative){
+            return i;
+        }
+    }
+
+    return SLOT_COUNT - 1;
+}
+
+/* =========================
+   SOUND
+========================= */
+
+function soundEnabled(){
+    return soundInput ? soundInput.checked : true;
+}
+
+function getAudioContext(){
+    if(!audioContext){
+        const AudioCtx =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if(!AudioCtx){
+            return null;
+        }
+
+        audioContext = new AudioCtx();
+    }
+
+    if(audioContext.state === "suspended"){
+        audioContext.resume();
+    }
+
+    return audioContext;
+}
+
+function beep(frequency, duration, volume, type="sine"){
+    if(!soundEnabled()) return;
+
+    const ctx = getAudioContext();
+    if(!ctx) return;
+
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.value = frequency;
+
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+        volume,
+        ctx.currentTime + 0.01
+    );
+    gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        ctx.currentTime + duration
+    );
+
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + duration + 0.02);
+}
+
+let bgMusicTimer = null;
+let bgMusicRunning = false;
+
+function spinSound(intensity=1){
+    if(!soundEnabled()) return;
+    const ctx = getAudioContext();
+    if(!ctx) return;
+
+    const now = ctx.currentTime;
+
+    // Sharp roulette tick
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(360 + Math.random()*420, now);
+    osc.frequency.exponentialRampToValueAtTime(145 + Math.random()*110, now+.075);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.075*intensity, now+.004);
+    gain.gain.exponentialRampToValueAtTime(.0001, now+.085);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(now+.1);
+
+    // Tiny metallic companion tick
+    const metal = ctx.createOscillator();
+    const metalGain = ctx.createGain();
+    metal.type = "triangle";
+    metal.frequency.setValueAtTime(1150 + Math.random()*900, now);
+    metalGain.gain.setValueAtTime(.0001, now);
+    metalGain.gain.exponentialRampToValueAtTime(.035*intensity, now+.003);
+    metalGain.gain.exponentialRampToValueAtTime(.0001, now+.05);
+    metal.connect(metalGain); metalGain.connect(ctx.destination);
+    metal.start(); metal.stop(now+.065);
+}
+
+function resultImpact(ctx, now){
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(185, now);
+    osc.frequency.exponentialRampToValueAtTime(52, now+.38);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.48, now+.012);
+    gain.gain.exponentialRampToValueAtTime(.0001, now+.44);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(now+.46);
+}
+
+function resultWhoosh(ctx, now){
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(2100, now+.46);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.14, now+.14);
+    gain.gain.exponentialRampToValueAtTime(.0001, now+.56);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(now+.58);
+}
+
+function winSound(){
+    if(!soundEnabled()) return;
+    const ctx = getAudioContext();
+    if(!ctx) return;
+    const now = ctx.currentTime;
+
+    resultImpact(ctx, now);
+    resultWhoosh(ctx, now);
+
+    // Big but clean major-style result chord
+    [
+        {f:392.00,t:.06,d:.18,v:.16},
+        {f:523.25,t:.13,d:.23,v:.19},
+        {f:659.25,t:.21,d:.30,v:.22},
+        {f:783.99,t:.31,d:.42,v:.24},
+        {f:1046.50,t:.44,d:.62,v:.19}
+    ].forEach(n=>{
+        const osc=ctx.createOscillator(), g=ctx.createGain();
+        osc.type="triangle";
+        osc.frequency.value=n.f;
+        g.gain.setValueAtTime(.0001,now+n.t);
+        g.gain.exponentialRampToValueAtTime(n.v,now+n.t+.016);
+        g.gain.exponentialRampToValueAtTime(.0001,now+n.t+n.d);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(now+n.t); osc.stop(now+n.t+n.d+.03);
+    });
+
+    // Glitter
+    [1396.9,1760,2093,2489].forEach((f,i)=>{
+        const osc=ctx.createOscillator(), g=ctx.createGain();
+        const t=now+.50+i*.055;
+        osc.type="sine";
+        osc.frequency.value=f;
+        g.gain.setValueAtTime(.0001,t);
+        g.gain.exponentialRampToValueAtTime(.095,t+.007);
+        g.gain.exponentialRampToValueAtTime(.0001,t+.13);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(t); osc.stop(t+.15);
+    });
+}
+
+/* ===== OPTIONAL PLAYFUL BACKGROUND =====
+   A very light, royalty-free-style synthetic loop generated locally.
+   It never uses external audio files.
+*/
+function backgroundEnabled(){
+    return soundInput ? soundInput.checked : true;
+}
+
+function playfulNote(frequency, duration, volume, startTime){
+    const ctx = getAudioContext();
+    if(!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(frequency, startTime);
+
+    gain.gain.setValueAtTime(.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(volume, startTime+.018);
+    gain.gain.exponentialRampToValueAtTime(.0001, startTime+duration);
+
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime+duration+.02);
+}
+
+function startPlayfulBackground(){
+    if(bgMusicRunning || !backgroundEnabled()) return;
+    const ctx = getAudioContext();
+    if(!ctx) return;
+
+    bgMusicRunning = true;
+
+    const loop = ()=>{
+        if(!bgMusicRunning || !backgroundEnabled()) return;
+
+        const now = ctx.currentTime;
+        const notes = [
+            261.63, 329.63, 392.00, 329.63,
+            293.66, 349.23, 440.00, 349.23
+        ];
+
+        notes.forEach((f,i)=>{
+            playfulNote(f, .15, .012, now + i*.16);
+        });
+
+        bgMusicTimer = setTimeout(loop, 1280);
+    };
+
+    loop();
+}
+
+function stopPlayfulBackground(){
+    bgMusicRunning = false;
+    if(bgMusicTimer){
+        clearTimeout(bgMusicTimer);
+        bgMusicTimer = null;
+    }
+}
+
+/* =========================
+   RESULT ACTION
+========================= */
+
+function playResultAction(winnerIndex){
+    const winningText =
+        labels[winnerIndex].querySelector("span");
+
+    const result =
+        winningText
+            ? winningText.textContent.trim()
+            : labels[winnerIndex].textContent.trim();
+
+    centerText.textContent = result || "결과";
+
+    center.classList.remove("result-pop");
+    void center.offsetWidth;
+    center.classList.add("result-pop");
+
+    labels.forEach(label => label.classList.remove("winner"));
+    labels[winnerIndex].classList.add("winner");
+
+    winSound();
+
+    setTimeout(()=>{
+        center.classList.remove("result-pop");
+        labels[winnerIndex].classList.remove("winner");
+    }, 1100);
+}
+
+function spin(){
+    if(spinning){
+        return;
+    }
+
+    applySettings();
+
+    if(!validateProbabilities()){
+        alert("확률 합계를 정확히 100%로 맞춰주세요.");
+        return;
+    }
+
+    const winnerIndex = pickWeightedWinner();
+
+    // Unlock the browser audio on the START gesture.
+    if(soundEnabled()){
+        getAudioContext();
+        startPlayfulBackground();
+    }
+
+    spinning = true;
+    startButton.disabled = true;
+    startButton.style.opacity = ".55";
+    if(quickStartButton){ quickStartButton.disabled = true; quickStartButton.style.opacity = ".55"; }
+    const quickResetButton = document.getElementById("quickReset");
+    if(quickResetButton){ quickResetButton.disabled = true; quickResetButton.style.opacity = ".55"; }
+
+    const target =
+        ((360 - (winnerIndex * STEP)) % 360);
+
+    const current =
+        ((currentRotation % 360) + 360) % 360;
+
+    let delta = target - current;
+
+    if(delta < 0){
+        delta += 360;
+    }
+
+    const fullTurns =
+        8 + Math.floor(Math.random() * 4);
+
+    const finalRotation =
+        currentRotation +
+        (fullTurns * 360) +
+        delta;
+
+    wheel.style.transition =
+        "transform 5s cubic-bezier(0.10,0.74,0.16,1)";
+
+    wheel.style.transform =
+        "rotate(" + finalRotation + "deg)";
+
+    currentRotation = finalRotation;
+
+    // A few subtle ticking clicks while the wheel is moving.
+    const soundTicks = [120,280,460,660,880,1120,1380,1660,1960,2280,2600,2910,3200,3470,3710,3930,4130,4310,4460,4590,4700,4800];
+    soundTicks.forEach((delay,index)=>{
+        setTimeout(()=>{
+            if(spinning){
+                const intensity=.68+(index/soundTicks.length)*.62;
+                spinSound(intensity);
+            }
+        },delay);
+    });
+
+    setTimeout(()=>{
+        playResultAction(winnerIndex);
+        stopPlayfulBackground();
+
+        spinning = false;
+        startButton.disabled = false;
+        startButton.style.opacity = "1";
+        if(quickStartButton){ quickStartButton.disabled = false; quickStartButton.style.opacity = "1"; }
+        if(quickResetButton){ quickResetButton.disabled = false; quickResetButton.style.opacity = "1"; }
+    }, 5050);
+}
+
+function resetWheel(){
+    if(spinning){
+        return;
+    }
+    stopPlayfulBackground();
+
+    wheel.style.transition = "none";
+    currentRotation = 0;
+    wheel.style.transform = "rotate(0deg)";
+
+    labels.forEach(label => label.classList.remove("winner"));
+    center.classList.remove("result-pop");
+
+    centerText.textContent =
+        centerInput.value.trim() || "룰렛";
+}
+
+function toggleControl(){
+    const hidden = control.style.display === "none";
+
+    if(hidden){
+        control.style.display = "block";
+        document.body.classList.remove("play-mode");
+        if(editButton) editButton.textContent = "CLOSE";
+    }else{
+        control.style.display = "none";
+        document.body.classList.add("play-mode");
+        if(editButton) editButton.textContent = "CONTROL";
+    }
+}
+
+probInputs.forEach(input => {
+    input.addEventListener(
+        "input",
+        validateProbabilities
+    );
+
+    input.addEventListener(
+        "change",
+        validateProbabilities
+    );
+});
+
+applySettings();
+control.style.display = "none";
+document.body.classList.add("play-mode");
+
+const quickButtons = document.getElementById("quickButtons");
+if(quickButtons){
+    quickButtons.style.display = "flex";
+    quickButtons.style.visibility = "visible";
+}
+
+const quickResetButton = document.getElementById("quickReset");
+if(quickResetButton){
+    quickResetButton.style.display = "block";
+    quickResetButton.style.visibility = "visible";
+}
+
+if(editButton) editButton.textContent = "CONTROL";
+
+/* =========================================================
+   FIREBASE DISPLAY SYNC
+   - CONTROL의 설정을 그대로 받아 원본 룰렛에 주입
+   - DISPLAY START/RESET은 원본 함수를 그대로 사용
+========================================================= */
+
+function syncFirebaseSettings(data){
+    if(!data) return;
+
+    if(data.center !== undefined){
+        centerInput.value = String(data.center);
+    }
+
+    if(data.sound !== undefined){
+        soundInput.checked =
+            String(data.sound).toUpperCase() !== "OFF";
+    }
+
+    if(Array.isArray(data.slots)){
+        data.slots.forEach((slot,index)=>{
+            if(index >= SLOT_COUNT || !slot) return;
+
+            if(slot.label !== undefined){
+                slotInputs[index].value = String(slot.label);
+            }
+
+            if(slot.prob !== undefined){
+                probInputs[index].value = Number(slot.prob);
+            }
+        });
+    }
+
+    // 원본의 디자인/텍스트/확률 처리 그대로 실행
+    applySettings();
+}
+
+/* CONTROL → DISPLAY : 설정 */
+db.ref("roulette_10/settings").on("value", snap=>{
+    syncFirebaseSettings(snap.val());
+});
+
+/* CONTROL ↔ DISPLAY : START / RESET 명령 */
+let lastFirebaseCommand = 0;
+
+db.ref("roulette_10/command").on("value", snap=>{
+    const command = snap.val();
+    if(!command || !command.at) return;
+    if(command.at === lastFirebaseCommand) return;
+
+    lastFirebaseCommand = command.at;
+
+    if(command.type === "start"){
+        spin();
+    }else if(command.type === "reset"){
+        resetWheel();
+    }
+});
+
+/* DISPLAY 전용: CONTROL 패널은 열지 않고 CLOSE처럼 동작 */
+function toggleControl(){
+    document.getElementById("control").style.display = "none";
+    document.body.classList.add("play-mode");
+
+    const editButton = document.getElementById("editButton");
+    if(editButton) editButton.textContent = "CLOSE";
+}
+
+</script>
+<script>document.body.classList.add("play-mode");document.getElementById("control").style.display="none";</script>
 </body>
 </html>
