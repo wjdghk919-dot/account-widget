@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>고정 계좌 안내 CONTROL</title>
+
+<style>
+
+html,
+body {
+
+    margin: 0;
+    padding: 0;
+
+    background: #ffffff;
+
+    font-family: Arial, sans-serif;
+
+}
+
+.control-panel {
+
+    position: absolute;
+
+    left: 30px;
+    top: 30px;
+
+    width: 430px;
+
+    padding: 24px;
+
+    box-sizing: border-box;
+
+    color: #ffffff;
+
+    background: #17181c;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 10px 25px rgba(0,0,0,0.25);
+
+}
+
+h1 {
+
+    margin: 0 0 22px 0;
+
+    font-size: 23px;
+
+    color: #ffffff;
+
+}
+
+label {
+
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-size: 13px;
+
+    color: #bbbbbb;
+
+}
+
+input {
+
+    width: 100%;
+
+    height: 36px;
+
+    margin-bottom: 14px;
+
+    padding: 0 10px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #cccccc;
+
+    border-radius: 4px;
+
+    font-size: 15px;
+
+}
+
+.row {
+
+    display: flex;
+
+    gap: 10px;
+
+}
+
+.row > div {
+
+    flex: 1;
+
+}
+
+button {
+
+    height: 38px;
+
+    padding: 0 18px;
+
+    margin-top: 4px;
+
+    margin-right: 8px;
+
+    border: 0;
+
+    border-radius: 5px;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+}
+
+.apply {
+
+    background: #d9b33f;
+
+    color: #000000;
+
+}
+
+.reset {
+
+    background: #777777;
+
+    color: #ffffff;
+
+}
+
+.status {
+
+    margin-top: 14px;
+
+    font-size: 12px;
+
+    color: #63b7ff;
+
+}
+
+.notice {
+
+    margin-top: 14px;
+
+    font-size: 11px;
+
+    line-height: 1.5;
+
+    color: #888888;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="control-panel">
+
+    <h1>고정 계좌 안내 CONTROL</h1>
+
+
+    <label>은행</label>
+
+    <input
+        id="bankInput"
+        type="text"
+        placeholder="은행명">
+
+
+    <div class="row">
+
+        <div>
+
+            <label>이름 이니셜</label>
+
+            <input
+                id="initialInput"
+                type="text"
+                placeholder="이니셜">
+
+        </div>
+
+
+        <div>
+
+            <label>계좌번호</label>
+
+            <input
+                id="accountInput"
+                type="text"
+                placeholder="계좌번호">
+
+        </div>
+
+    </div>
+
+
+    <button
+        class="apply"
+        onclick="applyAccount()">
+
+        APPLY
+
+    </button>
+
+
+    <button
+        class="reset"
+        onclick="resetAccount()">
+
+        RESET
+
+    </button>
+
+
+    <div class="notice">
+
+        방송용 DISPLAY는 계속 고정되어 있으며,
+        은행명·이니셜·계좌번호만 바꿀 수 있습니다.
+
+    </div>
+
+
+    <div
+        id="statusText"
+        class="status">
+
+        Firebase 연결 준비 중...
+
+    </div>
+
+</div>
+
+
+<script type="module">
+
+
+import { initializeApp }
+
+from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+
+import {
+
+    getDatabase,
+    ref,
+    set,
+    onValue
+
+}
+
+from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyBDZi7sRmUfh8CwM8kDiUsqU0X5LupK1r8",
+
+    authDomain:
+        "broadcast-widgets.firebaseapp.com",
+
+    databaseURL:
+        "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+    projectId:
+        "broadcast-widgets",
+
+    storageBucket:
+        "broadcast-widgets.firebasestorage.app",
+
+    messagingSenderId:
+        "711117372939",
+
+    appId:
+        "1:711117372939:web:470a6f5acf88691a12510e",
+
+    measurementId:
+        "G-080YENY338"
+
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+
+const database =
+    getDatabase(app);
+
+
+const accountRef =
+    ref(database, "account");
+
+
+const DEFAULT_DATA = {
+
+    bank: "카카오뱅크",
+
+    initial: "JH",
+
+    account: "3333-04-9692388"
+
+};
+
+
+function updateInputs(data) {
+
+    document.getElementById("bankInput").value =
+        data.bank || "";
+
+    document.getElementById("initialInput").value =
+        data.initial || "";
+
+    document.getElementById("accountInput").value =
+        data.account || "";
+
+}
+
+
+function getInputData() {
+
+    return {
+
+        bank:
+            document.getElementById("bankInput")
+                .value
+                .trim(),
+
+        initial:
+            document.getElementById("initialInput")
+                .value
+                .trim(),
+
+        account:
+            document.getElementById("accountInput")
+                .value
+                .trim()
+
+    };
+
+}
+
+
+window.applyAccount = async function() {
+
+    const data =
+        getInputData();
+
+
+    try {
+
+        await set(accountRef, data);
+
+
+        document.getElementById("statusText")
+            .textContent =
+            "저장 완료 · 모든 화면에 실시간 반영됨";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        document.getElementById("statusText")
+            .textContent =
+            "Firebase 저장 실패";
+
+    }
+
+};
+
+
+window.resetAccount = async function() {
+
+    try {
+
+        await set(
+            accountRef,
+            DEFAULT_DATA
+        );
+
+
+        document.getElementById("statusText")
+            .textContent =
+            "기본값으로 초기화 완료";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        document.getElementById("statusText")
+            .textContent =
+            "Firebase 초기화 실패";
+
+    }
+
+};
+
+
+onValue(
+
+    accountRef,
+
+    (snapshot) => {
+
+        const data =
+            snapshot.val();
+
+
+        if (data) {
+
+            updateInputs(data);
+
+
+            document.getElementById("statusText")
+                .textContent =
+                "Firebase 연결됨 · 실시간 동기화 중";
+
+        }
+
+        else {
+
+            updateInputs(
+                DEFAULT_DATA
+            );
+
+
+            document.getElementById("statusText")
+                .textContent =
+                "기본값 사용 중";
+
+        }
+
+    },
+
+
+    (error) => {
+
+        console.error(error);
+
+
+        document.getElementById("statusText")
+            .textContent =
+            "Firebase 연결 실패";
+
+    }
+
+);
+
+
+</script>
+
+
+</body>
+
+</html>
