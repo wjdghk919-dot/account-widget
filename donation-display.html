@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>후원 알림</title>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: Arial, sans-serif;
+}
+
+/* =========================================================
+   방송용 DISPLAY
+========================================================= */
+
+.display {
+    position: absolute;
+    left: 30px;
+    top: 30px;
+
+    width: 380px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 10px;
+}
+
+/* ---------------------------------------------------------
+   1. 후원자 알림 - 위쪽 캡슐
+--------------------------------------------------------- */
+
+.donor-alert {
+    min-width: 290px;
+    max-width: 360px;
+
+    padding: 9px 16px;
+
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #fff;
+
+    background: rgba(20, 21, 25, .84);
+
+    border: 1px solid rgba(255,255,255,.12);
+
+    border-radius: 24px;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08);
+
+    font-size: 17px;
+    font-weight: 900;
+
+    opacity: 0;
+    transform: translateY(-16px) scale(.95);
+
+    pointer-events: none;
+
+    transition:
+        opacity .28s ease,
+        transform .28s ease;
+}
+
+.donor-alert.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.donor-alert .event {
+    color: #f5f5f5;
+}
+
+.donor-alert .arrow {
+    margin: 0 7px;
+    color: #d7d7d7;
+}
+
+/* ---------------------------------------------------------
+   2. 계좌 후원 금액 카드
+--------------------------------------------------------- */
+
+.account-alert {
+    width: 240px;
+    padding: 11px 16px 13px;
+
+    box-sizing: border-box;
+
+    text-align: center;
+
+    color: #111;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,216,61,.94) 0%,
+            rgba(255,182,0,.86) 100%
+        );
+
+    border: 2px solid rgba(255,243,165,.88);
+
+    border-radius: 15px;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.38);
+
+    opacity: 0;
+    transform: translateY(12px) scale(.94);
+
+    pointer-events: none;
+
+    transition:
+        opacity .3s ease,
+        transform .3s ease;
+}
+
+.account-alert.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.account-title {
+    font-size: 14px;
+    font-weight: 900;
+
+    margin-bottom: 1px;
+}
+
+.account-amount {
+    font-size: 48px;
+    line-height: 1.05;
+    font-weight: 900;
+
+    letter-spacing: -1px;
+}
+
+/* =========================================================
+   CONTROL
+========================================================= */
+
+.control {
+    position: absolute;
+
+    left: 30px;
+    top: 240px;
+
+    width: 430px;
+
+    padding: 18px;
+
+    box-sizing: border-box;
+
+    color: #fff;
+
+    background: #18191d;
+
+    border: 1px solid #555;
+    border-radius: 12px;
+
+    box-shadow:
+        0 12px 28px rgba(0,0,0,.35);
+}
+
+.control h2 {
+    margin: 0 0 15px;
+
+    font-size: 20px;
+}
+
+.field {
+    margin-bottom: 11px;
+}
+
+.field label {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #aaa;
+
+    font-size: 12px;
+}
+
+.field input {
+    width: 100%;
+    height: 34px;
+
+    box-sizing: border-box;
+
+    padding: 0 10px;
+
+    border: 1px solid #777;
+    border-radius: 5px;
+
+    font-size: 15px;
+}
+
+.row {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+}
+
+.buttons {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    margin-top: 14px;
+}
+
+button {
+    height: 36px;
+
+    padding: 0 14px;
+
+    border: 0;
+    border-radius: 6px;
+
+    font-size: 13px;
+    font-weight: 900;
+
+    cursor: pointer;
+}
+
+.primary {
+    background: #d8b84c;
+    color: #111;
+}
+
+.secondary {
+    background: #fff;
+    color: #111;
+}
+
+.dark {
+    background: #666;
+    color: #fff;
+}
+
+.note {
+    margin-top: 10px;
+
+    color: #888;
+
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* 자동 숨김 */
+.status {
+    margin-top: 10px;
+
+    color: #aaa;
+
+    font-size: 12px;
+}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const DONATION_REF = db.ref("donation_alert");
+</script>
+
+</head>
+<body>
+<!-- =========================================================
+     DISPLAY
+========================================================= -->
+
+<div class="display">
+
+    <div id="donorAlert" class="donor-alert">
+        <span id="eventText" class="event">~팅커벨</span>
+        <span class="arrow">▶</span>
+        <span id="donorText">김종독</span>
+    </div>
+
+    <div id="accountAlert" class="account-alert">
+        <div class="account-title">계좌 후원</div>
+        <div id="amountText" class="account-amount">62,000</div>
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+
+<script>
+let donorTimer = null;
+let accountTimer = null;
+let countTimer = null;
+
+let remoteData = {
+  event: "~팅커벨",
+  donor: "김종독",
+  amount: 62000,
+  duration: 3,
+  countDuration: 900
+};
+
+function formatAmount(value) {
+  const number = Number(String(value).replace(/,/g, ""));
+  if (isNaN(number)) return String(value);
+  return number.toLocaleString("ko-KR");
+}
+function updateDonor() {
+  document.getElementById("eventText").textContent = remoteData.event;
+  document.getElementById("donorText").textContent = remoteData.donor;
+}
+function updateAmount(amount) {
+  document.getElementById("amountText").textContent = formatAmount(amount);
+}
+function getDuration() {
+  let seconds = Number(remoteData.duration);
+  if (isNaN(seconds) || seconds < 1) seconds = 3;
+  if (seconds > 30) seconds = 30;
+  return seconds * 1000;
+}
+function animateAmount(target) {
+  clearInterval(countTimer);
+  const duration = Math.max(0, Math.min(5000, Number(remoteData.countDuration) || 0));
+  if (duration === 0) { updateAmount(target); return; }
+  const startTime = performance.now();
+  countTimer = setInterval(() => {
+    const progress = Math.min((performance.now() - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.floor(target * eased);
+    updateAmount(current);
+    if (progress >= 1) { clearInterval(countTimer); updateAmount(target); }
+  }, 30);
+}
+function showDonor() {
+  clearTimeout(donorTimer);
+  updateDonor();
+  const el = document.getElementById("donorAlert");
+  el.classList.add("show");
+  donorTimer = setTimeout(() => el.classList.remove("show"), getDuration());
+}
+function showAccount() {
+  clearTimeout(accountTimer);
+  const target = Number(String(remoteData.amount).replace(/,/g, ""));
+  const el = document.getElementById("accountAlert");
+  el.classList.add("show");
+  if (isNaN(target) || target < 0) updateAmount(remoteData.amount);
+  else { updateAmount(0); animateAmount(target); }
+  accountTimer = setTimeout(() => el.classList.remove("show"), getDuration());
+}
+function showBoth() { showDonor(); showAccount(); }
+function hideAll() {
+  clearTimeout(donorTimer); clearTimeout(accountTimer); clearInterval(countTimer);
+  document.getElementById("donorAlert").classList.remove("show");
+  document.getElementById("accountAlert").classList.remove("show");
+}
+DONATION_REF.on("value", snap => {
+  const d = snap.val();
+  if (!d) return;
+  remoteData = {...remoteData, ...d};
+  // 데이터가 바뀌면 알림을 즉시 재생
+  if (d.trigger === "donor") showDonor();
+  if (d.trigger === "account") showAccount();
+  if (d.trigger === "both") showBoth();
+  if (d.trigger === "hide") hideAll();
+});
+updateDonor();
+updateAmount(remoteData.amount);
+</script>
+
+</body>
+</html>
