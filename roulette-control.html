@@ -592,8 +592,10 @@ body.play-mode .quickButtons{
 }
 
 </style>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
 </head>
 <body>
 <div class="wrap">
@@ -614,505 +616,9 @@ body.play-mode .quickButtons{
 <div class="field slot-field"><label>9번</label><input class="slotInput" type="text" maxlength="8" value="9"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
 <div class="field slot-field"><label>10번</label><input class="slotInput" type="text" maxlength="8" value="10"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
 </div>
-<div class="prob-total" id="probTotal">확률 합계: 100%</div>
-<div class="buttons">
-<button class="apply" onclick="applySettings()">APPLY</button>
-<button class="start" id="startButton" onclick="spin()">START</button>
-<button class="reset" onclick="resetWheel()">RESET</button>
-</div>
-<div class="note">각 칸 확률 설정 · 합계 100% · START 후 5초 회전 + 결과 액션/사운드 + 은은한 장난스런 배경음</div>
-</div>
-</div>
-
 <script>
-const SLOT_COUNT = 10;
-const STEP = 36;
 
-let currentRotation = 0;
-let spinning = false;
-let audioContext = null;
 
-const wheel = document.getElementById("wheel");
-const center = document.querySelector(".center");
-const centerText = document.getElementById("centerText");
-const centerInput = document.getElementById("centerInput");
-const startButton = document.getElementById("startButton");
-const labels = [...document.querySelectorAll(".label")];
-const slotInputs = [...document.querySelectorAll(".slotInput")];
-const probInputs = [...document.querySelectorAll(".probInput")];
-const probTotal = document.getElementById("probTotal");
-const soundInput = document.getElementById("soundInput");
-const control = document.getElementById("control");
-const quickStartButton = document.getElementById("quickStart");
-const toggleButton = document.getElementById("toggleButton");
-
-function applySettings(){
-    centerText.textContent =
-        centerInput.value.trim() || "룰렛";
-
-    slotInputs.forEach((input, index) => {
-        const label = labels[index];
-        const span = label.querySelector("span");
-
-        if(span){
-            span.textContent =
-                input.value.trim() || String(index + 1);
-        }else{
-            label.textContent =
-                input.value.trim() || String(index + 1);
-        }
-    });
-
-    validateProbabilities();
-}
-
-function getProbabilities(){
-    return probInputs.map(input => {
-        const value = Number(input.value);
-
-        if(!Number.isFinite(value) || value < 0){
-            return 0;
-        }
-
-        return Math.min(value, 100);
-    });
-}
-
-function validateProbabilities(){
-    const probabilities = getProbabilities();
-
-    const total = probabilities.reduce(
-        (sum, value) => sum + value,
-        0
-    );
-
-    const roundedTotal =
-        Math.round(total * 10) / 10;
-
-    probTotal.textContent =
-        "확률 합계: " +
-        roundedTotal.toLocaleString("ko-KR") +
-        "%";
-
-    const valid =
-        Math.abs(total - 100) < 0.0001;
-
-    probTotal.classList.toggle("ok", valid);
-
-    return valid;
-}
-
-function pickWeightedWinner(){
-    const probabilities = getProbabilities();
-
-    const randomValue = Math.random() * 100;
-
-    let cumulative = 0;
-
-    for(let i = 0; i < SLOT_COUNT; i++){
-        cumulative += probabilities[i];
-
-        if(randomValue < cumulative){
-            return i;
-        }
-    }
-
-    return SLOT_COUNT - 1;
-}
-
-/* =========================
-   SOUND
-========================= */
-
-function soundEnabled(){
-    return soundInput ? soundInput.checked : true;
-}
-
-function getAudioContext(){
-    if(!audioContext){
-        const AudioCtx =
-            window.AudioContext ||
-            window.webkitAudioContext;
-
-        if(!AudioCtx){
-            return null;
-        }
-
-        audioContext = new AudioCtx();
-    }
-
-    if(audioContext.state === "suspended"){
-        audioContext.resume();
-    }
-
-    return audioContext;
-}
-
-function beep(frequency, duration, volume, type="sine"){
-    if(!soundEnabled()) return;
-
-    const ctx = getAudioContext();
-    if(!ctx) return;
-
-    const oscillator = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    oscillator.type = type;
-    oscillator.frequency.value = frequency;
-
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(
-        volume,
-        ctx.currentTime + 0.01
-    );
-    gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        ctx.currentTime + duration
-    );
-
-    oscillator.connect(gain);
-    gain.connect(ctx.destination);
-
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + duration + 0.02);
-}
-
-let bgMusicTimer = null;
-let bgMusicRunning = false;
-
-function spinSound(intensity=1){
-    if(!soundEnabled()) return;
-    const ctx = getAudioContext();
-    if(!ctx) return;
-
-    const now = ctx.currentTime;
-
-    // Sharp roulette tick
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(360 + Math.random()*420, now);
-    osc.frequency.exponentialRampToValueAtTime(145 + Math.random()*110, now+.075);
-    gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(.075*intensity, now+.004);
-    gain.gain.exponentialRampToValueAtTime(.0001, now+.085);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(now+.1);
-
-    // Tiny metallic companion tick
-    const metal = ctx.createOscillator();
-    const metalGain = ctx.createGain();
-    metal.type = "triangle";
-    metal.frequency.setValueAtTime(1150 + Math.random()*900, now);
-    metalGain.gain.setValueAtTime(.0001, now);
-    metalGain.gain.exponentialRampToValueAtTime(.035*intensity, now+.003);
-    metalGain.gain.exponentialRampToValueAtTime(.0001, now+.05);
-    metal.connect(metalGain); metalGain.connect(ctx.destination);
-    metal.start(); metal.stop(now+.065);
-}
-
-function resultImpact(ctx, now){
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(185, now);
-    osc.frequency.exponentialRampToValueAtTime(52, now+.38);
-    gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(.48, now+.012);
-    gain.gain.exponentialRampToValueAtTime(.0001, now+.44);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(now+.46);
-}
-
-function resultWhoosh(ctx, now){
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(2100, now+.46);
-    gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(.14, now+.14);
-    gain.gain.exponentialRampToValueAtTime(.0001, now+.56);
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); osc.stop(now+.58);
-}
-
-function winSound(){
-    if(!soundEnabled()) return;
-    const ctx = getAudioContext();
-    if(!ctx) return;
-    const now = ctx.currentTime;
-
-    resultImpact(ctx, now);
-    resultWhoosh(ctx, now);
-
-    // Big but clean major-style result chord
-    [
-        {f:392.00,t:.06,d:.18,v:.16},
-        {f:523.25,t:.13,d:.23,v:.19},
-        {f:659.25,t:.21,d:.30,v:.22},
-        {f:783.99,t:.31,d:.42,v:.24},
-        {f:1046.50,t:.44,d:.62,v:.19}
-    ].forEach(n=>{
-        const osc=ctx.createOscillator(), g=ctx.createGain();
-        osc.type="triangle";
-        osc.frequency.value=n.f;
-        g.gain.setValueAtTime(.0001,now+n.t);
-        g.gain.exponentialRampToValueAtTime(n.v,now+n.t+.016);
-        g.gain.exponentialRampToValueAtTime(.0001,now+n.t+n.d);
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(now+n.t); osc.stop(now+n.t+n.d+.03);
-    });
-
-    // Glitter
-    [1396.9,1760,2093,2489].forEach((f,i)=>{
-        const osc=ctx.createOscillator(), g=ctx.createGain();
-        const t=now+.50+i*.055;
-        osc.type="sine";
-        osc.frequency.value=f;
-        g.gain.setValueAtTime(.0001,t);
-        g.gain.exponentialRampToValueAtTime(.095,t+.007);
-        g.gain.exponentialRampToValueAtTime(.0001,t+.13);
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(t); osc.stop(t+.15);
-    });
-}
-
-/* ===== OPTIONAL PLAYFUL BACKGROUND =====
-   A very light, royalty-free-style synthetic loop generated locally.
-   It never uses external audio files.
-*/
-function backgroundEnabled(){
-    return soundInput ? soundInput.checked : true;
-}
-
-function playfulNote(frequency, duration, volume, startTime){
-    const ctx = getAudioContext();
-    if(!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(frequency, startTime);
-
-    gain.gain.setValueAtTime(.0001, startTime);
-    gain.gain.exponentialRampToValueAtTime(volume, startTime+.018);
-    gain.gain.exponentialRampToValueAtTime(.0001, startTime+duration);
-
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(startTime);
-    osc.stop(startTime+duration+.02);
-}
-
-function startPlayfulBackground(){
-    if(bgMusicRunning || !backgroundEnabled()) return;
-    const ctx = getAudioContext();
-    if(!ctx) return;
-
-    bgMusicRunning = true;
-
-    const loop = ()=>{
-        if(!bgMusicRunning || !backgroundEnabled()) return;
-
-        const now = ctx.currentTime;
-        const notes = [
-            261.63, 329.63, 392.00, 329.63,
-            293.66, 349.23, 440.00, 349.23
-        ];
-
-        notes.forEach((f,i)=>{
-            playfulNote(f, .15, .012, now + i*.16);
-        });
-
-        bgMusicTimer = setTimeout(loop, 1280);
-    };
-
-    loop();
-}
-
-function stopPlayfulBackground(){
-    bgMusicRunning = false;
-    if(bgMusicTimer){
-        clearTimeout(bgMusicTimer);
-        bgMusicTimer = null;
-    }
-}
-
-/* =========================
-   RESULT ACTION
-========================= */
-
-function playResultAction(winnerIndex){
-    const winningText =
-        labels[winnerIndex].querySelector("span");
-
-    const result =
-        winningText
-            ? winningText.textContent.trim()
-            : labels[winnerIndex].textContent.trim();
-
-    centerText.textContent = result || "결과";
-
-    center.classList.remove("result-pop");
-    void center.offsetWidth;
-    center.classList.add("result-pop");
-
-    labels.forEach(label => label.classList.remove("winner"));
-    labels[winnerIndex].classList.add("winner");
-
-    winSound();
-
-    setTimeout(()=>{
-        center.classList.remove("result-pop");
-        labels[winnerIndex].classList.remove("winner");
-    }, 1100);
-}
-
-function spin(){
-    if(spinning){
-        return;
-    }
-
-    applySettings();
-
-    if(!validateProbabilities()){
-        alert("확률 합계를 정확히 100%로 맞춰주세요.");
-        return;
-    }
-
-    const winnerIndex = pickWeightedWinner();
-
-    // Unlock the browser audio on the START gesture.
-    if(soundEnabled()){
-        getAudioContext();
-        startPlayfulBackground();
-    }
-
-    spinning = true;
-    startButton.disabled = true;
-    startButton.style.opacity = ".55";
-    if(quickStartButton){ quickStartButton.disabled = true; quickStartButton.style.opacity = ".55"; }
-    const quickResetButton = document.getElementById("quickReset");
-    if(quickResetButton){ quickResetButton.disabled = true; quickResetButton.style.opacity = ".55"; }
-
-    const target =
-        ((360 - (winnerIndex * STEP)) % 360);
-
-    const current =
-        ((currentRotation % 360) + 360) % 360;
-
-    let delta = target - current;
-
-    if(delta < 0){
-        delta += 360;
-    }
-
-    const fullTurns =
-        8 + Math.floor(Math.random() * 4);
-
-    const finalRotation =
-        currentRotation +
-        (fullTurns * 360) +
-        delta;
-
-    wheel.style.transition =
-        "transform 5s cubic-bezier(0.10,0.74,0.16,1)";
-
-    wheel.style.transform =
-        "rotate(" + finalRotation + "deg)";
-
-    currentRotation = finalRotation;
-
-    // A few subtle ticking clicks while the wheel is moving.
-    const soundTicks = [120,280,460,660,880,1120,1380,1660,1960,2280,2600,2910,3200,3470,3710,3930,4130,4310,4460,4590,4700,4800];
-    soundTicks.forEach((delay,index)=>{
-        setTimeout(()=>{
-            if(spinning){
-                const intensity=.68+(index/soundTicks.length)*.62;
-                spinSound(intensity);
-            }
-        },delay);
-    });
-
-    setTimeout(()=>{
-        playResultAction(winnerIndex);
-        stopPlayfulBackground();
-
-        spinning = false;
-        startButton.disabled = false;
-        startButton.style.opacity = "1";
-        if(quickStartButton){ quickStartButton.disabled = false; quickStartButton.style.opacity = "1"; }
-        if(quickResetButton){ quickResetButton.disabled = false; quickResetButton.style.opacity = "1"; }
-    }, 5050);
-}
-
-function resetWheel(){
-    if(spinning){
-        return;
-    }
-    stopPlayfulBackground();
-
-    wheel.style.transition = "none";
-    currentRotation = 0;
-    wheel.style.transform = "rotate(0deg)";
-
-    labels.forEach(label => label.classList.remove("winner"));
-    center.classList.remove("result-pop");
-
-    centerText.textContent =
-        centerInput.value.trim() || "룰렛";
-}
-
-function toggleControl(){
-    const hidden = control.style.display === "none";
-
-    control.style.display = hidden ? "block" : "none";
-    document.body.classList.toggle("play-mode", !hidden);
-
-    if(toggleButton){
-        toggleButton.textContent =
-            hidden ? "HIDE CONTROL" : "SHOW CONTROL";
-    }
-
-    const editButton = document.getElementById("editButton");
-    if(editButton){
-        editButton.textContent = hidden ? "CLOSE" : "CONTROL";
-    }
-}
-
-probInputs.forEach(input => {
-    input.addEventListener(
-        "input",
-        validateProbabilities
-    );
-
-    input.addEventListener(
-        "change",
-        validateProbabilities
-    );
-});
-
-applySettings();
-control.style.display = "none";
-document.body.classList.add("play-mode");
-
-const quickButtons = document.getElementById("quickButtons");
-if(quickButtons){
-    quickButtons.style.display = "flex";
-    quickButtons.style.visibility = "visible";
-}
-
-const quickResetButton = document.getElementById("quickReset");
-if(quickResetButton){
-    quickResetButton.style.display = "block";
-    quickResetButton.style.visibility = "visible";
-}
-
-const editButton = document.getElementById("editButton");
-if(editButton) editButton.textContent = "CONTROL";
-</script>
-</div>
-<script>
 const firebaseConfig = {
   apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
   authDomain: "broadcast-widgets.firebaseapp.com",
@@ -1127,63 +633,130 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const ROULETTE_REF = db.ref("roulette");
 
-const centerInput=document.getElementById("centerInput");
-const slotInputs=[...document.querySelectorAll(".slotInput")];
-const probInputs=[...document.querySelectorAll(".probInput")];
-const soundInput=document.getElementById("soundInput");
-const probTotal=document.getElementById("probTotal");
 
-const statusEl=document.createElement("div");
-statusEl.style.cssText="margin-top:7px;color:#a9a9ad;font-size:10px;";
-statusEl.textContent="Firebase 연결 중...";
+const SLOT_COUNT = 10;
+const centerInput = document.getElementById("centerInput");
+const slotInputs = [...document.querySelectorAll(".slotInput")];
+const probInputs = [...document.querySelectorAll(".probInput")];
+const probTotal = document.getElementById("probTotal");
+const soundInput = document.getElementById("soundInput");
+
+const statusEl = document.createElement("div");
+statusEl.style.cssText = "margin-top:7px;color:#a9a9ad;font-size:10px;";
+statusEl.textContent = "Firebase 연결 중...";
 document.getElementById("control").appendChild(statusEl);
 
 function validateProbabilities(){
-  const total=probInputs.reduce((sum,input)=>{
-    const v=Number(input.value); return sum+(Number.isFinite(v)&&v>=0?Math.min(v,100):0);
-  },0);
-  const rounded=Math.round(total*10)/10;
-  probTotal.textContent="확률 합계: "+rounded.toLocaleString("ko-KR")+"%";
-  const ok=Math.abs(total-100)<0.0001;
-  probTotal.classList.toggle("ok",ok);
-  return ok;
-}
-function collectSettings(){
-  return {
-    centerText:centerInput.value.trim()||"룰렛",
-    soundEnabled:!!soundInput.checked,
-    slots:slotInputs.map((input,i)=>({label:input.value.trim()||String(i+1),prob:Number(probInputs[i].value)||0}))
-  };
-}
-function saveSettings(){
-  if(!validateProbabilities()){alert("확률 합계를 정확히 100%로 맞춰주세요.");return;}
-  ROULETTE_REF.update({...collectSettings(),action:"none",updatedAt:Date.now()})
-    .then(()=>statusEl.textContent="저장 완료 · DISPLAY에 실시간 반영")
-    .catch(err=>statusEl.textContent="저장 오류: "+err.message);
-}
-function sendAction(action){
-  if(action==="spin" && !validateProbabilities()){alert("확률 합계를 정확히 100%로 맞춰주세요.");return;}
-  ROULETTE_REF.update({...collectSettings(),action,actionAt:Date.now(),source:"control",updatedAt:Date.now()})
-    .then(()=>statusEl.textContent=(action==="spin"?"START 전송 완료 · DISPLAY 실행":"RESET 전송 완료 · DISPLAY 초기화"))
-    .catch(err=>statusEl.textContent="전송 오류: "+err.message);
-}
-probInputs.forEach(input=>{input.addEventListener("input",validateProbabilities);input.addEventListener("change",validateProbabilities);});
-validateProbabilities();
+    const total = probInputs.reduce((sum, input) => {
+        const v = Number(input.value);
+        return sum + (Number.isFinite(v) && v >= 0 ? Math.min(v,100) : 0);
+    }, 0);
 
-ROULETTE_REF.on("value",snap=>{
-  const d=snap.val();
-  statusEl.textContent=d?"Firebase 연결됨 · 실시간 동기화 중":"Firebase 연결됨 · 아직 저장된 설정 없음";
-  if(!d) return;
-  if(d.centerText!==undefined)centerInput.value=d.centerText;
-  if(Array.isArray(d.slots)){
-    d.slots.forEach((x,i)=>{
-      if(slotInputs[i])slotInputs[i].value=x?.label??String(i+1);
-      if(probInputs[i])probInputs[i].value=x?.prob??10;
+    const rounded = Math.round(total * 10) / 10;
+    probTotal.textContent = "확률 합계: " + rounded.toLocaleString("ko-KR") + "%";
+    const valid = Math.abs(total - 100) < 0.0001;
+    probTotal.classList.toggle("ok", valid);
+    return valid;
+}
+
+function collectSettings(){
+    return {
+        centerText: centerInput.value.trim() || "룰렛",
+        soundEnabled: !!soundInput.checked,
+        slots: slotInputs.map((input, i) => ({
+            label: input.value.trim() || String(i + 1),
+            prob: Math.max(0, Math.min(100, Number(probInputs[i].value) || 0))
+        })),
+        updatedAt: Date.now()
+    };
+}
+
+function saveSettings(){
+    if(!validateProbabilities()){
+        alert("확률 합계를 정확히 100%로 맞춰주세요.");
+        return;
+    }
+    ROULETTE_REF.update({
+        ...collectSettings(),
+        command: "none"
+    }).then(() => {
+        statusEl.textContent = "저장 완료 · DISPLAY에 실시간 반영";
+    }).catch(err => {
+        statusEl.textContent = "저장 오류: " + err.message;
     });
-  }
-  if(d.soundEnabled!==undefined)soundInput.checked=!!d.soundEnabled;
-  validateProbabilities();
+}
+
+function weightedWinner(settings){
+    const r = Math.random() * 100;
+    let cumulative = 0;
+    for(let i=0;i<settings.slots.length;i++){
+        cumulative += Number(settings.slots[i].prob) || 0;
+        if(r < cumulative) return i;
+    }
+    return settings.slots.length - 1;
+}
+
+function sendSpin(){
+    if(!validateProbabilities()){
+        alert("확률 합계를 정확히 100%로 맞춰주세요.");
+        return;
+    }
+    const settings = collectSettings();
+    const winnerIndex = weightedWinner(settings);
+
+    ROULETTE_REF.update({
+        ...settings,
+        command: "spin",
+        winnerIndex,
+        commandId: Date.now().toString() + "-" + Math.random().toString(36).slice(2),
+        commandAt: Date.now()
+    }).then(() => {
+        statusEl.textContent = "START 전송 완료 · DISPLAY에서 룰렛 실행";
+    }).catch(err => {
+        statusEl.textContent = "전송 오류: " + err.message;
+    });
+}
+
+function sendReset(){
+    ROULETTE_REF.update({
+        ...collectSettings(),
+        command: "reset",
+        commandId: Date.now().toString() + "-" + Math.random().toString(36).slice(2),
+        commandAt: Date.now()
+    }).then(() => {
+        statusEl.textContent = "RESET 전송 완료 · DISPLAY 초기화";
+    }).catch(err => {
+        statusEl.textContent = "전송 오류: " + err.message;
+    });
+}
+
+probInputs.forEach(input => {
+    input.addEventListener("input", validateProbabilities);
+    input.addEventListener("change", validateProbabilities);
 });
+
+ROULETTE_REF.on("value", snapshot => {
+    const data = snapshot.val();
+    if(!data){
+        statusEl.textContent = "Firebase 연결됨 · 아직 저장된 설정 없음";
+        return;
+    }
+
+    statusEl.textContent = "Firebase 연결됨 · 실시간 동기화 중";
+
+    if(data.centerText !== undefined) centerInput.value = data.centerText;
+    if(data.soundEnabled !== undefined) soundInput.checked = !!data.soundEnabled;
+
+    if(Array.isArray(data.slots)){
+        data.slots.forEach((slot, i) => {
+            if(slotInputs[i] && slot.label !== undefined) slotInputs[i].value = slot.label;
+            if(probInputs[i] && slot.prob !== undefined) probInputs[i].value = slot.prob;
+        });
+    }
+
+    validateProbabilities();
+});
+validateProbabilities();
 
 </script>
 </body>
