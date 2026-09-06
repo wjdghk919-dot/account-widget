@@ -13,21 +13,14 @@ html, body {
     font-family: Arial, sans-serif;
 }
 
-/* =========================================================
-   방송용 고정 DISPLAY
-========================================================= */
-
 .account-widget {
     position: absolute;
     left: 30px;
     top: 30px;
-
     width: 360px;
     height: auto;
     padding: 12px 16px 13px;
-
     box-sizing: border-box;
-
     color: #fff;
 
     background:
@@ -45,12 +38,10 @@ html, body {
         inset 0 1px 0 rgba(255,255,255,.14);
 }
 
-/* 위쪽 한 줄 */
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     min-height: 28px;
 }
 
@@ -64,18 +55,13 @@ html, body {
 .bank-icon {
     width: 22px;
     height: 22px;
-
     flex: 0 0 22px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 50%;
-
     background: #d8b84c;
     color: #171717;
-
     font-size: 12px;
     font-weight: 900;
 }
@@ -88,9 +74,7 @@ html, body {
 
 .initial {
     margin-left: 2px;
-
     color: #d7d7d7;
-
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 1px;
@@ -99,65 +83,41 @@ html, body {
 
 .badge {
     padding: 4px 7px;
-
     border-radius: 5px;
-
     background: rgba(255,255,255,.08);
-
     color: #ddd;
-
     font-size: 11px;
     font-weight: 800;
-
     white-space: nowrap;
 }
 
-/* 구분선 */
 .divider {
     height: 1px;
-
     margin: 9px 0 10px;
-
     background: rgba(255,255,255,.15);
 }
 
-/* 계좌번호 */
 .account-number {
     color: #fff6c7;
-
     font-size: 30px;
     line-height: 1.15;
     font-weight: 900;
-
     letter-spacing: .5px;
-
     white-space: nowrap;
 
     text-shadow:
         0 2px 5px rgba(0,0,0,.45);
 }
 
-
-/* =========================================================
-   운영용 CONTROL
-========================================================= */
-
 .control {
     position: absolute;
-
     left: 30px;
     top: 245px;
-
     width: 430px;
-
     padding: 18px;
-
     box-sizing: border-box;
-
     color: #fff;
-
     background: #18191d;
-
     border: 1px solid #555;
     border-radius: 12px;
 
@@ -171,7 +131,6 @@ html, body {
 
 .control h2 {
     margin: 0 0 16px;
-
     font-size: 21px;
 }
 
@@ -181,55 +140,40 @@ html, body {
 
 .field label {
     display: block;
-
     margin-bottom: 5px;
-
     color: #aaa;
-
     font-size: 12px;
 }
 
 .field input {
     width: 100%;
     height: 34px;
-
     box-sizing: border-box;
-
     padding: 0 10px;
-
     border: 1px solid #777;
     border-radius: 5px;
-
     font-size: 15px;
 }
 
 .row {
     display: grid;
-
     grid-template-columns: 1fr 1fr;
-
     gap: 10px;
 }
 
 .buttons {
     display: flex;
-
     gap: 8px;
-
     margin-top: 14px;
 }
 
 button {
     height: 36px;
-
     padding: 0 15px;
-
     border: 0;
     border-radius: 6px;
-
     font-size: 14px;
     font-weight: 900;
-
     cursor: pointer;
 }
 
@@ -245,36 +189,31 @@ button {
 
 .toggle-button {
     position: absolute;
-
     left: 30px;
     top: 190px;
-
     height: 30px;
-
     padding: 0 12px;
-
     background: #d8b84c;
     color: #111;
-
     font-size: 12px;
 }
 
 .note {
     margin-top: 10px;
-
     color: #888;
-
     font-size: 11px;
     line-height: 1.4;
+}
+
+.status {
+    margin-top: 8px;
+    color: #8fc7ff;
+    font-size: 11px;
 }
 </style>
 </head>
 
 <body>
-
-<!-- =========================================================
-     방송 화면용 고정 계좌 안내
-========================================================= -->
 
 <div class="account-widget">
 
@@ -308,11 +247,6 @@ button {
 
 </div>
 
-
-<!-- =========================================================
-     CONTROL
-========================================================= -->
-
 <button
     id="toggleButton"
     class="toggle-button"
@@ -337,7 +271,6 @@ button {
 
     </div>
 
-
     <div class="row">
 
         <div class="field">
@@ -352,7 +285,6 @@ button {
 
         </div>
 
-
         <div class="field">
 
             <label>계좌번호</label>
@@ -366,7 +298,6 @@ button {
         </div>
 
     </div>
-
 
     <div class="buttons">
 
@@ -386,52 +317,170 @@ button {
 
     </div>
 
-
     <div class="note">
         방송용 DISPLAY는 계속 고정되어 있으며,
         은행명·이니셜·계좌번호만 바꿀 수 있습니다.
     </div>
 
+    <div id="statusText" class="status">
+        Firebase 연결 준비 중...
+    </div>
+
 </div>
 
 
-<script>
+<script type="module">
 
-function applyAccount() {
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+import {
+    getDatabase,
+    ref,
+    set,
+    onValue
+}
+from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+
+const firebaseConfig = {
+
+    apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsqU0X5LupK1r8",
+
+    authDomain:
+        "broadcast-widgets.firebaseapp.com",
+
+    databaseURL:
+        "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+    projectId:
+        "broadcast-widgets",
+
+    storageBucket:
+        "broadcast-widgets.firebasestorage.app",
+
+    messagingSenderId:
+        "711117372939",
+
+    appId:
+        "1:711117372939:web:470a6f5acf88691a12510e",
+
+    measurementId:
+        "G-080YENY338"
+};
+
+
+const app = initializeApp(firebaseConfig);
+
+const database = getDatabase(app);
+
+const accountRef = ref(database, "account");
+
+
+const DEFAULT_DATA = {
+
+    bank: "카카오뱅크",
+
+    initial: "JH",
+
+    account: "3333-04-9692388"
+
+};
+
+
+function updateDisplay(data) {
 
     document.getElementById("bankText").textContent =
-        document.getElementById("bankInput").value;
+        data.bank || "";
 
     document.getElementById("initialText").textContent =
-        document.getElementById("initialInput").value;
+        data.initial || "";
 
     document.getElementById("accountText").textContent =
-        document.getElementById("accountInput").value;
-}
+        data.account || "";
 
-
-function resetAccount() {
 
     document.getElementById("bankInput").value =
-        "카카오뱅크";
+        data.bank || "";
 
     document.getElementById("initialInput").value =
-        "JH";
+        data.initial || "";
 
     document.getElementById("accountInput").value =
-        "3333-04-9692388";
-
-    applyAccount();
+        data.account || "";
 }
 
 
-function toggleControl() {
+function getInputData() {
+
+    return {
+
+        bank:
+            document.getElementById("bankInput").value.trim(),
+
+        initial:
+            document.getElementById("initialInput").value.trim(),
+
+        account:
+            document.getElementById("accountInput").value.trim()
+
+    };
+
+}
+
+
+window.applyAccount = async function() {
+
+    const data = getInputData();
+
+    try {
+
+        await set(accountRef, data);
+
+        document.getElementById("statusText").textContent =
+            "저장 완료 · 모든 화면에 실시간 반영됨";
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById("statusText").textContent =
+            "Firebase 저장 실패";
+
+    }
+
+};
+
+
+window.resetAccount = async function() {
+
+    try {
+
+        await set(accountRef, DEFAULT_DATA);
+
+        document.getElementById("statusText").textContent =
+            "기본값으로 초기화 완료";
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById("statusText").textContent =
+            "Firebase 초기화 실패";
+
+    }
+
+};
+
+
+window.toggleControl = function() {
 
     const panel =
         document.getElementById("controlPanel");
 
     const button =
         document.getElementById("toggleButton");
+
 
     if (panel.classList.contains("hidden")) {
 
@@ -446,8 +495,41 @@ function toggleControl() {
 
         button.textContent =
             "SHOW CONTROL";
+
     }
-}
+
+};
+
+
+onValue(accountRef, (snapshot) => {
+
+    const data = snapshot.val();
+
+    if (data) {
+
+        updateDisplay(data);
+
+        document.getElementById("statusText").textContent =
+            "Firebase 연결됨 · 실시간 동기화 중";
+
+    } else {
+
+        updateDisplay(DEFAULT_DATA);
+
+        document.getElementById("statusText").textContent =
+            "기본값 사용 중";
+
+    }
+
+}, (error) => {
+
+    console.error(error);
+
+    document.getElementById("statusText").textContent =
+        "Firebase 연결 실패";
+
+});
+
 
 </script>
 
