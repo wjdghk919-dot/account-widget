@@ -592,10 +592,8 @@ body.play-mode .quickButtons{
 }
 
 </style>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
 </head>
 <body>
 <div class="wrap">
@@ -605,77 +603,28 @@ body.play-mode .quickButtons{
 <div class="field"><label>중앙 문구</label><input id="centerInput" type="text" maxlength="6" value="룰렛"></div>
 <div class="field"><label>회전시간</label><input type="text" value="5초 고정" disabled></div>
 <div class="field"><label>사운드</label><div class="sound-status"><input id="soundInput" type="checkbox" checked><span>ON</span></div></div>
+<div class="field slot-field"><label>1번</label><input class="slotInput" type="text" maxlength="8" value="1"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>2번</label><input class="slotInput" type="text" maxlength="8" value="2"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>3번</label><input class="slotInput" type="text" maxlength="8" value="3"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>4번</label><input class="slotInput" type="text" maxlength="8" value="4"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>5번</label><input class="slotInput" type="text" maxlength="8" value="5"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>6번</label><input class="slotInput" type="text" maxlength="8" value="6"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>7번</label><input class="slotInput" type="text" maxlength="8" value="7"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>8번</label><input class="slotInput" type="text" maxlength="8" value="8"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>9번</label><input class="slotInput" type="text" maxlength="8" value="9"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
+<div class="field slot-field"><label>10번</label><input class="slotInput" type="text" maxlength="8" value="10"><input class="probInput" type="number" min="0" max="100" step="0.1" value="10"><span class="prob-unit">%</span></div>
 </div>
+<div class="prob-total" id="probTotal">확률 합계: 100%</div>
+<div class="buttons">
+<button class="apply" onclick="applySettings()">APPLY</button>
+<button class="start" id="startButton" onclick="spin()">START</button>
+<button class="reset" onclick="resetWheel()">RESET</button>
+</div>
+<div class="note">각 칸 확률 설정 · 합계 100% · START 후 5초 회전 + 결과 액션/사운드 + 은은한 장난스런 배경음</div>
+</div>
+</div>
+
 <script>
-
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
-  authDomain: "broadcast-widgets.firebaseapp.com",
-  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "broadcast-widgets",
-  storageBucket: "broadcast-widgets.firebasestorage.app",
-  messagingSenderId: "711117372939",
-  appId: "1:711117372939:web:470a6f5acf88691a12510e",
-  measurementId: "G-080YENY338"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const ROULETTE_REF = db.ref("roulette");
-
-
-const firebaseStatus = document.createElement("div");
-firebaseStatus.style.cssText = "margin-top:7px;color:#a9a9ad;font-size:10px;";
-firebaseStatus.textContent = "Firebase 연결 중...";
-document.getElementById("control")?.appendChild(firebaseStatus);
-
-function collectRouletteData() {
-    return {
-        centerText: centerInput.value.trim() || "룰렛",
-        soundEnabled: !!soundInput.checked,
-        slots: slotInputs.map((input, i) => {
-            const p = Number(probInputs[i].value);
-            return { label: input.value.trim() || String(i + 1), prob: Number.isFinite(p) ? p : 0 };
-        }),
-    };
-}
-
-function saveRouletteSettings() {
-    const data = collectRouletteData();
-    ROULETTE_REF.update({
-        ...data,
-        action: "none",
-        updatedAt: Date.now()
-    }).then(() => {
-        firebaseStatus.textContent = "저장 완료 · DISPLAY에 실시간 반영";
-    }).catch(err => {
-        firebaseStatus.textContent = "저장 오류: " + err.message;
-    });
-}
-
-function sendRouletteAction(action) {
-    const data = collectRouletteData();
-    ROULETTE_REF.update({
-        ...data,
-        action,
-        actionAt: Date.now(),
-        updatedAt: Date.now()
-    }).then(() => {
-        firebaseStatus.textContent = (action === "spin" ? "START 전송 완료" : "RESET 전송 완료");
-    }).catch(err => {
-        firebaseStatus.textContent = "전송 오류: " + err.message;
-    });
-}
-
-ROULETTE_REF.on("value", snapshot => {
-    const data = snapshot.val();
-    if(data) {
-        firebaseStatus.textContent = "Firebase 연결됨 · 실시간 동기화 중";
-    } else {
-        firebaseStatus.textContent = "Firebase 연결됨 · 아직 저장된 설정 없음";
-    }
-});
-
 const SLOT_COUNT = 10;
 const STEP = 36;
 
@@ -1019,7 +968,7 @@ function playResultAction(winnerIndex){
     }, 1100);
 }
 
-function spin(fromFirebase = false){
+function spin(){
     if(spinning){
         return;
     }
@@ -1097,7 +1046,7 @@ function spin(fromFirebase = false){
     }, 5050);
 }
 
-function resetWheel(fromFirebase = false){
+function resetWheel(){
     if(spinning){
         return;
     }
@@ -1161,6 +1110,81 @@ if(quickResetButton){
 
 const editButton = document.getElementById("editButton");
 if(editButton) editButton.textContent = "CONTROL";
+</script>
+</div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROULETTE_REF = db.ref("roulette");
+
+const centerInput=document.getElementById("centerInput");
+const slotInputs=[...document.querySelectorAll(".slotInput")];
+const probInputs=[...document.querySelectorAll(".probInput")];
+const soundInput=document.getElementById("soundInput");
+const probTotal=document.getElementById("probTotal");
+
+const statusEl=document.createElement("div");
+statusEl.style.cssText="margin-top:7px;color:#a9a9ad;font-size:10px;";
+statusEl.textContent="Firebase 연결 중...";
+document.getElementById("control").appendChild(statusEl);
+
+function validateProbabilities(){
+  const total=probInputs.reduce((sum,input)=>{
+    const v=Number(input.value); return sum+(Number.isFinite(v)&&v>=0?Math.min(v,100):0);
+  },0);
+  const rounded=Math.round(total*10)/10;
+  probTotal.textContent="확률 합계: "+rounded.toLocaleString("ko-KR")+"%";
+  const ok=Math.abs(total-100)<0.0001;
+  probTotal.classList.toggle("ok",ok);
+  return ok;
+}
+function collectSettings(){
+  return {
+    centerText:centerInput.value.trim()||"룰렛",
+    soundEnabled:!!soundInput.checked,
+    slots:slotInputs.map((input,i)=>({label:input.value.trim()||String(i+1),prob:Number(probInputs[i].value)||0}))
+  };
+}
+function saveSettings(){
+  if(!validateProbabilities()){alert("확률 합계를 정확히 100%로 맞춰주세요.");return;}
+  ROULETTE_REF.update({...collectSettings(),action:"none",updatedAt:Date.now()})
+    .then(()=>statusEl.textContent="저장 완료 · DISPLAY에 실시간 반영")
+    .catch(err=>statusEl.textContent="저장 오류: "+err.message);
+}
+function sendAction(action){
+  if(action==="spin" && !validateProbabilities()){alert("확률 합계를 정확히 100%로 맞춰주세요.");return;}
+  ROULETTE_REF.update({...collectSettings(),action,actionAt:Date.now(),source:"control",updatedAt:Date.now()})
+    .then(()=>statusEl.textContent=(action==="spin"?"START 전송 완료 · DISPLAY 실행":"RESET 전송 완료 · DISPLAY 초기화"))
+    .catch(err=>statusEl.textContent="전송 오류: "+err.message);
+}
+probInputs.forEach(input=>{input.addEventListener("input",validateProbabilities);input.addEventListener("change",validateProbabilities);});
+validateProbabilities();
+
+ROULETTE_REF.on("value",snap=>{
+  const d=snap.val();
+  statusEl.textContent=d?"Firebase 연결됨 · 실시간 동기화 중":"Firebase 연결됨 · 아직 저장된 설정 없음";
+  if(!d) return;
+  if(d.centerText!==undefined)centerInput.value=d.centerText;
+  if(Array.isArray(d.slots)){
+    d.slots.forEach((x,i)=>{
+      if(slotInputs[i])slotInputs[i].value=x?.label??String(i+1);
+      if(probInputs[i])probInputs[i].value=x?.prob??10;
+    });
+  }
+  if(d.soundEnabled!==undefined)soundInput.checked=!!d.soundEnabled;
+  validateProbabilities();
+});
+
 </script>
 </body>
 </html>
