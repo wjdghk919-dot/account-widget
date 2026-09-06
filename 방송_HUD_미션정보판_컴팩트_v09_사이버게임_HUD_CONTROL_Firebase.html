@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>방송 HUD 미션정보판 - 계좌후원 롤링 3배 고해상도 CONTROL 분리</title>
+
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    background:transparent;
+    font-family:Arial,sans-serif;
+}
+
+/* =========================================================
+   DISPLAY — CYBER GAME HUD
+========================================================= */
+
+.hud{
+    position:absolute;
+    left:55px;
+    top:85px;
+
+    width:615px;
+    padding:21px 24px 24px;
+
+    box-sizing:border-box;
+
+    color:#fff;
+
+    /* 투명 배경 유지 */
+    background:
+        linear-gradient(180deg, rgba(9,15,24,.88), rgba(7,10,16,.78));
+
+    border:2px solid rgba(73,232,255,.78);
+    border-radius:10px;
+
+    box-shadow:
+        0 0 0 1px rgba(255,55,213,.24),
+        0 0 18px rgba(48,215,255,.12),
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -1px 0 rgba(255,55,213,.12);
+
+    overflow:hidden;
+}
+
+/* 상단/하단 모서리 포인트 */
+.hud::before,
+.hud::after{
+    content:"";
+    position:absolute;
+    pointer-events:none;
+}
+
+.hud::before{
+    left:0;
+    top:0;
+    width:110px;
+    height:3px;
+    background:linear-gradient(90deg,#42e8ff,rgba(66,232,255,0));
+    box-shadow:0 0 10px rgba(66,232,255,.45);
+}
+
+.hud::after{
+    right:0;
+    bottom:0;
+    width:120px;
+    height:3px;
+    background:linear-gradient(90deg,rgba(255,48,206,0),#ff48d8);
+    box-shadow:0 0 10px rgba(255,48,216,.38);
+}
+
+/* 상단 */
+.hud-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+
+    height:54px;
+}
+
+.hud-account{
+    color:#50ebff;
+
+    font-size:24px;
+    font-weight:900;
+
+    white-space:nowrap;
+
+    text-transform:none;
+
+    text-shadow:
+        0 0 8px rgba(80,235,255,.38);
+}
+
+.hud-current{
+    min-width:0;
+
+    color:#fff;
+
+    font-size:24px;
+    font-weight:900;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+
+    text-align:right;
+
+    text-shadow:0 0 8px rgba(255,255,255,.16);
+}
+
+/* 롤링 전환 */
+.hud-current.changing{
+    animation:rollChange .38s ease;
+}
+
+@keyframes rollChange{
+    0%{
+        opacity:0;
+        transform:translateY(18px);
+        filter:blur(3px);
+    }
+    55%{
+        opacity:1;
+        transform:translateY(-3px);
+        filter:blur(0);
+    }
+    100%{
+        opacity:1;
+        transform:translateY(0);
+        filter:blur(0);
+    }
+}
+
+.hud-divider{
+    position:relative;
+    height:2px;
+
+    margin:15px 0 18px;
+
+    background:linear-gradient(
+        90deg,
+        rgba(76,228,255,.62),
+        rgba(255,255,255,.14) 55%,
+        rgba(255,66,212,.52)
+    );
+
+    box-shadow:0 0 7px rgba(77,224,255,.16);
+}
+
+/* 중간 공지 */
+.notice-title{
+    margin-bottom:9px;
+
+    color:#58ebff;
+
+    font-size:24px;
+    font-weight:900;
+
+    text-shadow:0 0 8px rgba(88,235,255,.34);
+}
+
+.notice-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.notice-line{
+    color:#b8f7ff;
+
+    font-size:22.5px;
+    line-height:1.15;
+    font-weight:800;
+
+    text-shadow:0 0 5px rgba(83,229,251,.18);
+}
+
+.notice-line::before{
+    content:"▶ ";
+    color:#55e8ff;
+}
+
+/* 하단 참가자 */
+.rank-title{
+    margin-top:21px;
+    margin-bottom:12px;
+
+    color:#ff99e7;
+
+    font-size:24px;
+    font-weight:900;
+
+    text-shadow:0 0 8px rgba(255,108,224,.30);
+}
+
+.rank-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.rank-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    font-size:24px;
+    line-height:1.15;
+    font-weight:900;
+}
+
+.rank-name{
+    color:#fff;
+
+    min-width:0;
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.rank-name::before{
+    content:"// ";
+    color:#768696;
+    font-size:.72em;
+}
+
+.rank-value{
+    color:#dffbff;
+    margin-left:18px;
+
+    text-shadow:0 0 6px rgba(94,230,255,.16);
+}
+
+/* 미세한 스캔라인 — 매우 약하게 */
+.hud .notice-list::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:0;
+    bottom:0;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.018) 0px,
+        rgba(255,255,255,.018) 1px,
+        transparent 1px,
+        transparent 5px
+    );
+    opacity:.22;
+}
+
+
+/* =========================================================
+   CONTROL — CYBER THEME
+========================================================= */
+
+.control-toggle{
+    position:absolute;
+    left:720px;
+    top:35px;
+
+    height:30px;
+    padding:0 12px;
+
+    border:1px solid rgba(77,228,255,.65);
+    border-radius:5px;
+
+    background:#111a24;
+    color:#62ecff;
+
+    font-size:12px;
+    font-weight:900;
+
+    cursor:pointer;
+    z-index:30;
+
+    box-shadow:0 0 10px rgba(66,232,255,.10);
+}
+
+.control{
+    position:absolute;
+    left:720px;
+    top:80px;
+
+    width:960px;
+    padding:16px;
+
+    box-sizing:border-box;
+
+    color:#fff;
+
+    background:
+        linear-gradient(180deg, #0d131c, #10141b);
+
+    border:1px solid rgba(82,220,255,.34);
+    border-radius:8px;
+
+    box-shadow:
+        0 12px 28px rgba(0,0,0,.42),
+        0 0 0 1px rgba(255,58,214,.08);
+}
+
+.control.hidden{
+    display:none;
+}
+
+.control h2{
+    margin:0 0 13px;
+    font-size:20px;
+    color:#eaffff;
+    text-shadow:0 0 7px rgba(67,229,255,.18);
+}
+
+.control-layout{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:18px;
+    align-items:start;
+}
+
+.control-column{
+    min-width:0;
+}
+
+.row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
+
+.field{
+    margin-bottom:9px;
+}
+
+.field label{
+    display:block;
+    margin-bottom:4px;
+    color:#7ca2b0;
+    font-size:11px;
+}
+
+.field input{
+    width:100%;
+    height:31px;
+    box-sizing:border-box;
+    padding:0 8px;
+
+    border:1px solid #354f5d;
+    border-radius:4px;
+
+    background:#0b1118;
+    color:#eafcff;
+
+    font-size:13px;
+    outline:none;
+}
+
+.field input:focus{
+    border-color:#51e8ff;
+    box-shadow:0 0 0 1px rgba(81,232,255,.20);
+}
+
+.section-label{
+    margin:10px 0 5px;
+
+    color:#70eaff;
+
+    font-size:12px;
+    font-weight:900;
+}
+
+.donation-editor{
+    max-height:330px;
+    overflow-y:auto;
+    padding-right:3px;
+}
+
+.donation-row{
+    display:grid;
+    grid-template-columns:24px 1fr 105px 30px;
+    gap:5px;
+
+    margin-bottom:5px;
+}
+
+.donation-row input{
+    width:100%;
+    height:29px;
+    box-sizing:border-box;
+
+    padding:0 7px;
+
+    border:1px solid #354f5d;
+    border-radius:4px;
+
+    background:#0b1118;
+    color:#eafcff;
+
+    font-size:12px;
+}
+
+.row-number{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    color:#536872;
+    font-size:10px;
+}
+
+.delete-button{
+    height:29px;
+
+    border:1px solid #475965;
+    border-radius:4px;
+
+    background:#202b34;
+    color:#ff8ce8;
+
+    cursor:pointer;
+    font-weight:900;
+}
+
+.notice-row{
+    display:grid;
+    grid-template-columns:1fr 30px;
+    gap:5px;
+
+    margin-bottom:5px;
+}
+
+.notice-row input{
+    width:100%;
+    height:29px;
+    box-sizing:border-box;
+
+    border:1px solid #354f5d;
+    border-radius:4px;
+
+    background:#0b1118;
+    color:#eafcff;
+
+    font-size:12px;
+    padding:0 7px;
+}
+
+.notice-row button{
+    height:29px;
+
+    border:1px solid #475965;
+    border-radius:4px;
+
+    background:#202b34;
+    color:#ff8ce8;
+
+    cursor:pointer;
+}
+
+.rank-section-label{
+    margin-top:16px;
+}
+
+.rank-row-editor{
+    display:grid;
+    grid-template-columns:1fr 90px 30px;
+    gap:5px;
+
+    margin-bottom:5px;
+}
+
+.rank-row-editor input{
+    width:100%;
+    height:29px;
+    box-sizing:border-box;
+
+    border:1px solid #354f5d;
+    border-radius:4px;
+
+    background:#0b1118;
+    color:#eafcff;
+
+    font-size:12px;
+    padding:0 7px;
+}
+
+.rank-row-editor button{
+    height:29px;
+
+    border:1px solid #475965;
+    border-radius:4px;
+
+    background:#202b34;
+    color:#ff8ce8;
+
+    cursor:pointer;
+}
+
+.buttons{
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+
+    margin-top:12px;
+}
+
+.buttons button{
+    height:34px;
+    padding:0 13px;
+
+    border:1px solid #3a5764;
+    border-radius:5px;
+
+    font-size:12px;
+    font-weight:900;
+
+    cursor:pointer;
+}
+
+.apply{
+    background:#113844;
+    border-color:#4feaff !important;
+    color:#65edff;
+}
+
+.reset{
+    background:#252e36;
+    color:#dbe8ed;
+}
+
+.add{
+    background:#eafcff;
+    color:#091015;
+}
+
+.speed-field{
+    margin-top:14px;
+}
+
+.note{
+    margin-top:9px;
+    color:#627984;
+
+    font-size:10px;
+    line-height:1.35;
+}
+
+.info-column{
+    max-height:620px;
+    overflow-y:auto;
+    padding-right:3px;
+}
+</style>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const HUD_REF = db.ref("hud_mission");
+</script>
+
+</head>
+
+<body>
+
+<div id="firebaseStatus" style="
+    position:absolute; left:720px; top:10px;
+    color:#72f2ff; font:700 12px Arial,sans-serif;
+    background:#0b1118; border:1px solid #315564;
+    border-radius:4px; padding:5px 8px; z-index:50;">
+    Firebase 연결 중...
+</div>
+
+
+<!-- =========================================================
+     DISPLAY
+========================================================= -->
+
+<div class="hud">
+
+    <div class="hud-top">
+
+        <div class="hud-account">
+            계좌
+        </div>
+
+        <div id="currentText" class="hud-current">
+            죽밥 ♥ 100,000
+        </div>
+
+    </div>
+
+    <div class="hud-divider"></div>
+
+    <div id="noticeTitle" class="notice-title">
+        현재미션
+    </div>
+
+    <div id="noticeList" class="notice-list"></div>
+
+    <div id="rankTitle" class="rank-title">
+        참가자
+    </div>
+
+    <div id="rankList" class="rank-list"></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     CONTROL TOGGLE
+========================================================= -->
+
+<button
+    id="toggleButton"
+    class="control-toggle"
+    onclick="toggleControl()"
+>
+    HIDE CONTROL
+</button>
+
+
+<!-- =========================================================
+     CONTROL
+========================================================= -->
+
+<div id="controlPanel" class="control">
+
+    <h2>방송 HUD CONTROL</h2>
+
+    <div class="control-layout">
+
+        <!-- LEFT: DONATION -->
+        <section class="control-column donation-column">
+
+            <div class="row">
+
+                <div class="field">
+                    <label>상단 좌측</label>
+                    <input
+                        id="accountInput"
+                        type="text"
+                        value="계좌"
+                    >
+                </div>
+
+                <div class="field">
+                    <label>롤링 표시 제목</label>
+                    <input
+                        id="titleInput"
+                        type="text"
+                        value="계좌후원"
+                    >
+                </div>
+
+            </div>
+
+            <div class="section-label">
+                계좌후원 목록
+            </div>
+
+            <div
+                id="donationEditor"
+                class="donation-editor"
+            ></div>
+
+            <div class="buttons">
+                <button
+                    class="add"
+                    onclick="addDonation()"
+                >
+                    + 후원내역 추가
+                </button>
+            </div>
+
+            <div class="field speed-field">
+                <label>롤링 간격 (초)</label>
+                <input
+                    id="speedInput"
+                    type="number"
+                    min="1"
+                    max="30"
+                    value="3"
+                >
+            </div>
+
+        </section>
+
+
+        <!-- RIGHT: NOTICE + RANK -->
+        <section class="control-column info-column">
+
+            <div class="section-label">
+                공지 / 현재 미션
+            </div>
+
+            <div class="field">
+                <input
+                    id="noticeTitleInput"
+                    type="text"
+                    value="현재미션"
+                >
+            </div>
+
+            <div id="noticeEditor"></div>
+
+            <div class="section-label rank-section-label">
+                참가자 / 점수
+            </div>
+
+            <div class="field">
+                <input
+                    id="rankTitleInput"
+                    type="text"
+                    value="참가자"
+                    placeholder="참가자 제목"
+                >
+            </div>
+
+            <div id="rankEditor"></div>
+
+            <div class="buttons">
+                <button
+                    class="apply"
+                    onclick="applyHUD()"
+                >
+                    APPLY
+                </button>
+
+                <button
+                    class="reset"
+                    onclick="resetHUD()"
+                >
+                    RESET
+                </button>
+
+                <button
+                    class="reset"
+                    onclick="resetDonations()"
+                >
+                    후원목록 초기화
+                </button>
+            </div>
+
+            <div class="note">
+                계좌후원 목록은 이 창에서 직접 입력합니다.
+                빈 줄은 자동으로 제외되며 순서대로 계속 반복됩니다.
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   기본 데이터
+========================================================= */
+
+const NOTICE_COUNT = 3;
+const RANK_COUNT = 6;
+
+let donations = [
+    { name:"죽밥", amount:"100000" }
+];
+
+let noticeData = [
+    "9회 댄스 미션",
+    "9회 노래 미션",
+    "클리어하면 보너스"
+];
+
+let rankTitleData = "참가자";
+
+let rankData = [
+    {name:"병태기", value:"114"},
+    {name:"도땡", value:"76"},
+    {name:"국군", value:"13"},
+    {name:"", value:""},
+    {name:"", value:""},
+    {name:"", value:""}
+];
+
+let activeDonations = [];
+let currentDonationIndex = 0;
+let rollingTimer = null;
+
+
+/* =========================================================
+   계좌후원 목록 입력창 생성
+========================================================= */
+
+function createDonationEditor(){
+
+    const editor =
+        document.getElementById(
+            "donationEditor"
+        );
+
+    editor.innerHTML = "";
+
+    donations.forEach((item,index) => {
+
+        editor.innerHTML += `
+            <div class="donation-row">
+
+                <div class="row-number">
+                    ${index + 1}
+                </div>
+
+                <input
+                    id="donorInput${index}"
+                    type="text"
+                    value="${escapeAttr(item.name)}"
+                    placeholder="후원자"
+                >
+
+                <input
+                    id="amountInput${index}"
+                    type="text"
+                    value="${escapeAttr(item.amount)}"
+                    placeholder="금액"
+                >
+
+                <button
+                    class="delete-button"
+                    onclick="deleteDonation(${index})"
+                >
+                    X
+                </button>
+
+            </div>
+        `;
+    });
+}
+
+
+/* =========================================================
+   공지 입력창
+========================================================= */
+
+function createNoticeEditor(){
+
+    const editor =
+        document.getElementById(
+            "noticeEditor"
+        );
+
+    editor.innerHTML = "";
+
+    for(let i=0;i<NOTICE_COUNT;i++){
+
+        editor.innerHTML += `
+            <div class="notice-row">
+
+                <input
+                    id="noticeInput${i}"
+                    type="text"
+                    value="${escapeAttr(noticeData[i])}"
+                    placeholder="공지 / 미션"
+                >
+
+                <button
+                    onclick="clearNotice(${i})"
+                >
+                    X
+                </button>
+
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   참가자 입력창
+========================================================= */
+
+function createRankEditor(){
+
+    const editor =
+        document.getElementById(
+            "rankEditor"
+        );
+
+    editor.innerHTML = "";
+
+    for(let i=0;i<RANK_COUNT;i++){
+
+        editor.innerHTML += `
+            <div class="rank-row-editor">
+
+                <input
+                    id="rankNameInput${i}"
+                    type="text"
+                    value="${escapeAttr(rankData[i].name)}"
+                    placeholder="이름"
+                >
+
+                <input
+                    id="rankValueInput${i}"
+                    type="text"
+                    value="${escapeAttr(rankData[i].value)}"
+                    placeholder="점수"
+                >
+
+                <button
+                    onclick="clearRank(${i})"
+                >
+                    X
+                </button>
+
+            </div>
+        `;
+    }
+}
+
+
+/* =========================================================
+   후원목록 활성 데이터
+========================================================= */
+
+function rebuildActiveDonations(){
+
+    activeDonations = [];
+
+    for(let i=0;i<donations.length;i++){
+
+        const nameInput =
+            document.getElementById(
+                "donorInput" + i
+            );
+
+        const amountInput =
+            document.getElementById(
+                "amountInput" + i
+            );
+
+        if(!nameInput || !amountInput){
+            continue;
+        }
+
+        const name =
+            nameInput.value.trim();
+
+        const amount =
+            amountInput.value.trim();
+
+        if(name !== "" || amount !== ""){
+
+            activeDonations.push({
+                name: name !== "" ? name : "후원자",
+                amount: amount !== "" ? amount : "0"
+            });
+        }
+    }
+}
+
+
+/* =========================================================
+   금액 표시
+========================================================= */
+
+function formatAmount(value){
+
+    const raw =
+        String(value)
+            .replace(/,/g,"")
+            .trim();
+
+    const number =
+        Number(raw);
+
+    if(isNaN(number)){
+        return String(value);
+    }
+
+    return number.toLocaleString("ko-KR") + "원";
+}
+
+
+/* =========================================================
+   다음 후원자 표시
+========================================================= */
+
+function showNextDonation(){
+
+    if(activeDonations.length === 0){
+
+        document.getElementById(
+            "currentText"
+        ).textContent = "후원 대기";
+
+        return;
+    }
+
+    if(
+        currentDonationIndex >=
+        activeDonations.length
+    ){
+
+        currentDonationIndex = 0;
+    }
+
+    const item =
+        activeDonations[
+            currentDonationIndex
+        ];
+
+    const currentText =
+        document.getElementById(
+            "currentText"
+        );
+
+    const title =
+        document.getElementById(
+            "titleInput"
+        ).value.trim();
+
+
+    currentText.textContent =
+        item.name
+        + " ♥ "
+        + formatAmount(item.amount)
+            .replace("원","");
+
+
+    currentText.classList.remove("changing");
+
+    void currentText.offsetWidth;
+
+    currentText.classList.add("changing");
+
+    currentDonationIndex++;
+}
+
+
+/* =========================================================
+   롤링 시작
+========================================================= */
+
+function restartRolling(){
+
+    clearInterval(rollingTimer);
+
+    currentDonationIndex = 0;
+
+    showNextDonation();
+
+    let seconds =
+        Number(
+            document.getElementById(
+                "speedInput"
+            ).value
+        );
+
+    if(
+        isNaN(seconds) ||
+        seconds < 1
+    ){
+        seconds = 3;
+    }
+
+    if(seconds > 30){
+        seconds = 30;
+    }
+
+    rollingTimer =
+        setInterval(
+            showNextDonation,
+            seconds * 1000
+        );
+}
+
+
+/* =========================================================
+   HUD 적용
+========================================================= */
+
+function applyHUD(){
+
+    applyTopLabel();
+    rebuildActiveDonations();
+
+    document.getElementById("noticeTitle").textContent =
+        document.getElementById("noticeTitleInput").value;
+
+    noticeData = [];
+
+    for(let i=0;i<NOTICE_COUNT;i++){
+        noticeData.push(
+            document.getElementById("noticeInput" + i).value.trim()
+        );
+    }
+
+    renderNotices();
+
+    rankTitleData =
+        document.getElementById("rankTitleInput").value.trim();
+
+    document.getElementById("rankTitle").textContent =
+        rankTitleData || "참가자";
+
+    rankData = [];
+
+    for(let i=0;i<RANK_COUNT;i++){
+        rankData.push({
+            name: document.getElementById("rankNameInput" + i).value.trim(),
+            value: document.getElementById("rankValueInput" + i).value.trim()
+        });
+    }
+
+    renderRanks();
+    restartRolling();
+
+    const payload = {
+        accountLabel: document.getElementById("accountInput").value.trim(),
+        rollingTitle: document.getElementById("titleInput").value.trim(),
+        donations: donations.map((_, index) => ({
+            name: (document.getElementById("donorInput" + index)?.value || "").trim(),
+            amount: (document.getElementById("amountInput" + index)?.value || "").trim()
+        })),
+        rollingSeconds: Number(document.getElementById("speedInput").value) || 3,
+        noticeTitle: document.getElementById("noticeTitleInput").value.trim(),
+        notices: noticeData,
+        rankTitle: rankTitleData || "참가자",
+        ranks: rankData
+    };
+
+    HUD_REF.set(payload)
+        .then(() => {
+            setFirebaseStatus("저장 완료 · 모든 화면에 실시간 반영됨", true);
+        })
+        .catch((error) => {
+            console.error(error);
+            setFirebaseStatus("Firebase 저장 실패", false);
+        });
+}
+
+
+/* =========================================================
+   상단 계좌 라벨 적용
+========================================================= */
+
+function applyTopLabel(){
+
+    document.querySelector(
+        ".hud-account"
+    ).textContent =
+        document.getElementById(
+            "accountInput"
+        ).value;
+}
+
+
+/* =========================================================
+   공지 렌더
+========================================================= */
+
+function renderNotices(){
+
+    const list =
+        document.getElementById(
+            "noticeList"
+        );
+
+    list.innerHTML = "";
+
+    noticeData
+        .filter(item => item !== "")
+        .forEach(item => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+            div.className =
+                "notice-line";
+
+            div.textContent =
+                item;
+
+            list.appendChild(div);
+        });
+}
+
+
+/* =========================================================
+   참가자 렌더
+========================================================= */
+
+function renderRanks(){
+
+    const list =
+        document.getElementById(
+            "rankList"
+        );
+
+    list.innerHTML = "";
+
+    rankData
+        .filter(item => item.name !== "")
+        .forEach(item => {
+
+            list.innerHTML += `
+                <div class="rank-row">
+
+                    <div class="rank-name">
+                        ${escapeHTML(item.name)}
+                    </div>
+
+                    <div class="rank-value">
+                        (${escapeHTML(item.value)})
+                    </div>
+
+                </div>
+            `;
+        });
+}
+
+
+/* =========================================================
+   후원 추가
+========================================================= */
+
+function addDonation(){
+
+    donations.push({
+        name:"",
+        amount:""
+    });
+
+    createDonationEditor();
+}
+
+
+/* =========================================================
+   후원 삭제
+========================================================= */
+
+function deleteDonation(index){
+
+    if(donations.length <= 1){
+
+        donations[0] = {
+            name:"",
+            amount:""
+        };
+
+    }else{
+
+        donations.splice(index,1);
+    }
+
+    createDonationEditor();
+    rebuildActiveDonations();
+    restartRolling();
+}
+
+
+/* =========================================================
+   후원목록 초기화
+========================================================= */
+
+function resetDonations(){
+
+    donations = [];
+
+    createDonationEditor();
+
+    rebuildActiveDonations();
+
+    clearInterval(rollingTimer);
+
+    document.getElementById(
+        "currentText"
+    ).textContent = "후원 대기";
+}
+
+
+/* =========================================================
+   개별 공지 삭제
+========================================================= */
+
+function clearNotice(index){
+
+    document.getElementById(
+        "noticeInput" + index
+    ).value = "";
+
+    applyHUD();
+}
+
+
+/* =========================================================
+   개별 참가자 삭제
+========================================================= */
+
+function clearRank(index){
+
+    document.getElementById(
+        "rankNameInput" + index
+    ).value = "";
+
+    document.getElementById(
+        "rankValueInput" + index
+    ).value = "";
+
+    applyHUD();
+}
+
+
+/* =========================================================
+   전체 RESET
+========================================================= */
+
+function resetHUD(){
+
+    document.getElementById(
+        "accountInput"
+    ).value = "계좌";
+
+    document.getElementById(
+        "titleInput"
+    ).value = "계좌후원";
+
+    document.getElementById(
+        "noticeTitleInput"
+    ).value = "현재미션";
+
+    document.getElementById(
+        "rankTitleInput"
+    ).value = "참가자";
+
+    document.getElementById(
+        "speedInput"
+    ).value = 3;
+
+
+    donations = [
+        {name:"죽밥", amount:"100000"}
+    ];
+
+    noticeData = [
+        "9회 댄스 미션",
+        "9회 노래 미션",
+        "클리어하면 보너스"
+    ];
+
+    rankData = [
+        {name:"병태기", value:"114"},
+        {name:"도땡", value:"76"},
+        {name:"국군", value:"13"},
+        {name:"", value:""},
+        {name:"", value:""},
+        {name:"", value:""}
+    ];
+
+
+    createDonationEditor();
+    createNoticeEditor();
+    createRankEditor();
+
+    applyTopLabel();
+
+    document.getElementById(
+        "rankTitle"
+    ).textContent = "참가자";
+
+    renderNotices();
+    renderRanks();
+    rebuildActiveDonations();
+    restartRolling();
+}
+
+
+/* =========================================================
+   CONTROL
+========================================================= */
+
+function toggleControl(){
+
+    const panel =
+        document.getElementById(
+            "controlPanel"
+        );
+
+    const button =
+        document.getElementById(
+            "toggleButton"
+        );
+
+
+    if(
+        panel.classList.contains("hidden")
+    ){
+
+        panel.classList.remove("hidden");
+
+        button.textContent =
+            "HIDE CONTROL";
+
+    }else{
+
+        panel.classList.add("hidden");
+
+        button.textContent =
+            "SHOW CONTROL";
+    }
+}
+
+
+/* =========================================================
+   안전한 텍스트 처리
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+function escapeAttr(value){
+    return escapeHTML(value);
+}
+
+
+/* =========================================================
+   시작
+========================================================= */
+
+createDonationEditor();
+createNoticeEditor();
+createRankEditor();
+
+document.getElementById(
+    "rankTitleInput"
+).value = rankTitleData;
+
+document.getElementById(
+    "rankTitle"
+).textContent =
+    rankTitleData;
+
+applyTopLabel();
+renderNotices();
+renderRanks();
+rebuildActiveDonations();
+restartRolling();
+
+
+function setFirebaseStatus(message, ok){
+    const el = document.getElementById("firebaseStatus");
+    if(!el) return;
+    el.textContent = message;
+    el.style.color = ok ? "#72f2ff" : "#ff8ca8";
+}
+
+HUD_REF.on("value", (snapshot) => {
+    if(snapshot.exists()){
+        setFirebaseStatus("Firebase 연결됨 · 실시간 동기화 중", true);
+    }else{
+        setFirebaseStatus("Firebase 연결됨 · 아직 저장된 데이터 없음", true);
+    }
+}, (error) => {
+    console.error(error);
+    setFirebaseStatus("Firebase 연결 오류", false);
+});
+
+</script>
+
+</body>
+</html>
