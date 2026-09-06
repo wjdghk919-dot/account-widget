@@ -749,9 +749,8 @@ body:not(.play-mode) .quickButtons button{
     }
 }
 
-/* ===== FIREBASE DISPLAY MODE ===== */
-#control{display:none !important;}
 </style>
+<script>window.DISPLAY_MODE=true;</script>
 </head>
 <body>
 <div class="wrap">
@@ -812,7 +811,7 @@ body:not(.play-mode) .quickButtons button{
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBDZi7sRmUfhC8Mw8MkDiUsaQnK1r8",
+  apiKey: "AIzaSyBDZi7sRmUfhC8wM8kDiUsaQnK1r8",
   authDomain: "broadcast-widgets.firebaseapp.com",
   databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "broadcast-widgets",
@@ -1176,7 +1175,7 @@ function spin(){
 
     applySettings();
 
-    if(!validateProbabilities()){
+    if(!window.DISPLAY_MODE && !validateProbabilities()){
         alert("확률 합계를 정확히 100%로 맞춰주세요.");
         return;
     }
@@ -1307,14 +1306,95 @@ if(quickResetButton){
 }
 
 if(editButton) editButton.textContent = "CONTROL";
+</script>
 
+<style>
 /* =========================================================
-   FIREBASE DISPLAY SYNC
-   - CONTROL의 설정을 그대로 받아 원본 룰렛에 주입
-   - DISPLAY START/RESET은 원본 함수를 그대로 사용
+   DISPLAY MODE
+   원본 룰렛의 디자인/숫자/사운드/애니메이션은 그대로 유지.
+   CONTROL 패널만 숨기고 플레이 버튼만 중앙 아래 배치.
 ========================================================= */
+body.display-mode{
+    overflow:hidden !important;
+}
 
-function syncFirebaseSettings(data){
+body.display-mode .control{
+    display:none !important;
+}
+
+/* 원본 wheel/label의 transform은 절대 건드리지 않는다. */
+body.display-mode .wrap{
+    width:100% !important;
+    max-width:none !important;
+    height:100vh !important;
+    min-height:100vh !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+}
+
+body.display-mode .roulette{
+    flex:0 0 auto !important;
+    margin:0 !important;
+}
+
+body.display-mode .quickButtons{
+    position:relative !important;
+    left:auto !important;
+    right:auto !important;
+    top:auto !important;
+    bottom:auto !important;
+    transform:none !important;
+    width:min(420px,78vw) !important;
+    max-width:420px !important;
+    margin:10px auto 0 !important;
+    display:flex !important;
+    justify-content:center !important;
+    gap:8px !important;
+    z-index:200 !important;
+}
+
+body.display-mode .quickButtons button{
+    flex:1 1 0 !important;
+    width:auto !important;
+    max-width:150px !important;
+    min-width:0 !important;
+    height:40px !important;
+    margin:0 !important;
+}
+
+body.display-mode .toggle{
+    display:none !important;
+}
+
+@media (max-width:600px){
+    body.display-mode .wrap{
+        min-height:100svh !important;
+        height:100svh !important;
+    }
+    body.display-mode .quickButtons{
+        width:88vw !important;
+        max-width:360px !important;
+        gap:6px !important;
+        margin-top:9px !important;
+    }
+    body.display-mode .quickButtons button{
+        height:42px !important;
+        padding:0 5px !important;
+        font-size:11px !important;
+    }
+}
+</style>
+
+<script>
+document.body.classList.add("display-mode");
+
+/* DISPLAY는 CONTROL 패널의 값이 없더라도
+   Firebase에서 받은 저장값으로 원본 입력칸을 채워 사용한다. */
+function applyFirebaseSettings(data){
     if(!data) return;
 
     if(data.center !== undefined){
@@ -1340,24 +1420,34 @@ function syncFirebaseSettings(data){
         });
     }
 
-    // 원본의 디자인/텍스트/확률 처리 그대로 실행
-    applySettings();
+    /* 원본의 숫자/중앙문구 적용 로직을 그대로 사용 */
+    centerText.textContent =
+        centerInput.value.trim() || "룰렛";
+
+    slotInputs.forEach((input,index)=>{
+        const span = labels[index]?.querySelector("span");
+        if(span){
+            span.textContent =
+                input.value.trim() || String(index+1);
+        }
+    });
 }
 
-/* CONTROL → DISPLAY : 설정 */
+/* CONTROL → DISPLAY : 저장된 설정 */
 db.ref("roulette_10/settings").on("value", snap=>{
-    syncFirebaseSettings(snap.val());
+    applyFirebaseSettings(snap.val());
 });
 
-/* CONTROL ↔ DISPLAY : START / RESET 명령 */
-let lastFirebaseCommand = 0;
+/* CONTROL → DISPLAY : START / RESET */
+let lastCommandAt = 0;
 
 db.ref("roulette_10/command").on("value", snap=>{
     const command = snap.val();
-    if(!command || !command.at) return;
-    if(command.at === lastFirebaseCommand) return;
 
-    lastFirebaseCommand = command.at;
+    if(!command || !command.at) return;
+    if(command.at === lastCommandAt) return;
+
+    lastCommandAt = command.at;
 
     if(command.type === "start"){
         spin();
@@ -1366,16 +1456,9 @@ db.ref("roulette_10/command").on("value", snap=>{
     }
 });
 
-/* DISPLAY 전용: CONTROL 패널은 열지 않고 CLOSE처럼 동작 */
-function toggleControl(){
-    document.getElementById("control").style.display = "none";
-    document.body.classList.add("play-mode");
-
-    const editButton = document.getElementById("editButton");
-    if(editButton) editButton.textContent = "CLOSE";
-}
-
+/* DISPLAY 자체 START 버튼을 눌렀을 때도
+   원본 spin()을 그대로 사용하므로 오디오가 사용자 gesture로 unlock된다. */
 </script>
-<script>document.body.classList.add("play-mode");document.getElementById("control").style.display="none";</script>
+
 </body>
 </html>
