@@ -7,7 +7,7 @@
 <style>
 html,body{margin:0;padding:0;width:100%;height:100%;background:transparent;font-family:Arial,"Malgun Gothic",sans-serif;overflow:hidden;color:#fff}
 *{box-sizing:border-box}
-.wrap{position:relative;width:620px;height:760px;padding-top:28px}
+.wrap{position:relative;width:560px;margin:0 auto;padding-top:28px}
 .roulette{position:relative;width:560px;height:560px;margin:0 auto}
 .pointer{position:absolute;z-index:20;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:30px solid #f3df9a;filter:drop-shadow(0 3px 4px rgba(0,0,0,.42))}
 .wheel{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from -18deg,#16191e 0deg 36deg,#252a31 36deg 72deg,#16191e 72deg 108deg,#252a31 108deg 144deg,#16191e 144deg 180deg,#252a31 180deg 216deg,#16191e 216deg 252deg,#252a31 252deg 288deg,#16191e 288deg 324deg,#252a31 324deg 360deg);border:10px solid rgba(236,215,150,.92);box-shadow:0 16px 36px rgba(0,0,0,.38),inset 0 0 0 2px rgba(255,255,255,.11),inset 0 0 0 8px rgba(0,0,0,.18);transform:rotate(0deg);transform-origin:50% 50%}
@@ -16,7 +16,7 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:transparent;font-
 .label{position:absolute;left:50%;top:50%;width:92px;margin-left:-46px;margin-top:-16px;text-align:center;color:#f7f2df;font-size:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 4px rgba(0,0,0,.55);transform:rotate(var(--angle)) translateY(-205px) rotate(calc(var(--angle)*-1));transform-origin:center center}
 .center{position:absolute;left:50%;top:280px;transform:translate(-50%,-50%);width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#343941 0%,#15181d 55%,#0b0d10 100%);border:7px solid rgba(236,215,150,.92);box-shadow:0 0 0 4px rgba(12,14,18,.75),0 0 20px rgba(238,217,157,.28);display:flex;align-items:center;justify-content:center;z-index:10}
 .centerText{font-size:30px;font-weight:900;color:#fff;text-shadow:0 2px 5px #000;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.quick{position:absolute;left:50%;top:638px;transform:translateX(-50%);display:flex;gap:8px;z-index:50}
+.quick{position:relative;left:auto;top:auto;transform:none;width:560px;margin:8px auto 0;display:flex;justify-content:center;gap:8px;z-index:50}
 .quick button{width:135px;height:38px;border:0;border-radius:7px;font-size:12px;font-weight:900;cursor:pointer}
 #start{background:#ead596;color:#151515} #reset{background:#2a2e34;color:#fff} #close{background:#2a2e34;color:#fff}
 .hidden{display:none!important}
@@ -95,7 +95,14 @@ function doReset(){
  wheel.style.transition="none";currentRotation=0;wheel.style.transform="rotate(0deg)";
  centerText.textContent=settings.center||"룰렛";
 }
-function sendStart(){db.ref("roulette_10/command").set({type:"start",at:Date.now()})}
+function sendStart(){
+  // DISPLAY는 확률 입력창을 가지고 있지 않으므로
+  // 확률 검사를 하지 않는다. CONTROL에서 저장된 설정을 사용한다.
+  db.ref("roulette_10/command").set({
+    type:"start",
+    at:Date.now()
+  });
+}
 function sendReset(){db.ref("roulette_10/command").set({type:"reset",at:Date.now()})}
 function closeButtons(){document.getElementById("quick").classList.add("hidden")}
 db.ref("roulette_10/settings").on("value",s=>applySettings(s.val()));
