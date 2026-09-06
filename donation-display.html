@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>후원 알림</title>
+<title>후원 알림 DISPLAY</title>
 <style>
 html, body {
     margin: 0;
@@ -273,7 +273,7 @@ button {
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
 const firebaseConfig = {
-  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
   authDomain: "broadcast-widgets.firebaseapp.com",
   databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "broadcast-widgets",
@@ -285,38 +285,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const DONATION_REF = db.ref("donation_alert");
-</script>
 
-</head>
-<body>
-<!-- =========================================================
-     DISPLAY
-========================================================= -->
-
-<div class="display">
-
-    <div id="donorAlert" class="donor-alert">
-        <span id="eventText" class="event">~팅커벨</span>
-        <span class="arrow">▶</span>
-        <span id="donorText">김종독</span>
-    </div>
-
-    <div id="accountAlert" class="account-alert">
-        <div class="account-title">계좌 후원</div>
-        <div id="amountText" class="account-amount">62,000</div>
-    </div>
-
-</div>
-
-
-<!-- =========================================================
-
-<script>
 let donorTimer = null;
 let accountTimer = null;
 let countTimer = null;
 
-let remoteData = {
+let data = {
   event: "~팅커벨",
   donor: "김종독",
   amount: 62000,
@@ -325,36 +299,47 @@ let remoteData = {
 };
 
 function formatAmount(value) {
-  const number = Number(String(value).replace(/,/g, ""));
-  if (isNaN(number)) return String(value);
-  return number.toLocaleString("ko-KR");
+  const n = Number(String(value).replace(/,/g, ""));
+  return isNaN(n) ? String(value) : n.toLocaleString("ko-KR");
 }
+
 function updateDonor() {
-  document.getElementById("eventText").textContent = remoteData.event;
-  document.getElementById("donorText").textContent = remoteData.donor;
+  document.getElementById("eventText").textContent = data.event ?? "";
+  document.getElementById("donorText").textContent = data.donor ?? "";
 }
-function updateAmount(amount) {
-  document.getElementById("amountText").textContent = formatAmount(amount);
+
+function updateAmount(value) {
+  document.getElementById("amountText").textContent = formatAmount(value);
 }
+
 function getDuration() {
-  let seconds = Number(remoteData.duration);
-  if (isNaN(seconds) || seconds < 1) seconds = 3;
-  if (seconds > 30) seconds = 30;
-  return seconds * 1000;
+  let sec = Number(data.duration);
+  if (!isFinite(sec) || sec < 1) sec = 3;
+  if (sec > 30) sec = 30;
+  return sec * 1000;
 }
+
 function animateAmount(target) {
   clearInterval(countTimer);
-  const duration = Math.max(0, Math.min(5000, Number(remoteData.countDuration) || 0));
-  if (duration === 0) { updateAmount(target); return; }
+  const duration = Math.max(0, Math.min(5000, Number(data.countDuration) || 0));
+  if (!duration) {
+    updateAmount(target);
+    return;
+  }
+
   const startTime = performance.now();
   countTimer = setInterval(() => {
     const progress = Math.min((performance.now() - startTime) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.floor(target * eased);
-    updateAmount(current);
-    if (progress >= 1) { clearInterval(countTimer); updateAmount(target); }
+    updateAmount(Math.floor(target * eased));
+
+    if (progress >= 1) {
+      clearInterval(countTimer);
+      updateAmount(target);
+    }
   }, 30);
 }
+
 function showDonor() {
   clearTimeout(donorTimer);
   updateDonor();
@@ -362,34 +347,66 @@ function showDonor() {
   el.classList.add("show");
   donorTimer = setTimeout(() => el.classList.remove("show"), getDuration());
 }
+
 function showAccount() {
   clearTimeout(accountTimer);
-  const target = Number(String(remoteData.amount).replace(/,/g, ""));
+  const target = Number(String(data.amount).replace(/,/g, ""));
   const el = document.getElementById("accountAlert");
   el.classList.add("show");
-  if (isNaN(target) || target < 0) updateAmount(remoteData.amount);
-  else { updateAmount(0); animateAmount(target); }
+
+  if (isNaN(target) || target < 0) {
+    updateAmount(data.amount);
+  } else {
+    updateAmount(0);
+    animateAmount(target);
+  }
+
   accountTimer = setTimeout(() => el.classList.remove("show"), getDuration());
 }
-function showBoth() { showDonor(); showAccount(); }
+
+function showBoth() {
+  showDonor();
+  showAccount();
+}
+
 function hideAll() {
-  clearTimeout(donorTimer); clearTimeout(accountTimer); clearInterval(countTimer);
+  clearTimeout(donorTimer);
+  clearTimeout(accountTimer);
+  clearInterval(countTimer);
   document.getElementById("donorAlert").classList.remove("show");
   document.getElementById("accountAlert").classList.remove("show");
 }
-DONATION_REF.on("value", snap => {
-  const d = snap.val();
-  if (!d) return;
-  remoteData = {...remoteData, ...d};
-  // 데이터가 바뀌면 알림을 즉시 재생
-  if (d.trigger === "donor") showDonor();
-  if (d.trigger === "account") showAccount();
-  if (d.trigger === "both") showBoth();
-  if (d.trigger === "hide") hideAll();
+
+DONATION_REF.on("value", snapshot => {
+  const incoming = snapshot.val();
+  if (!incoming) return;
+
+  data = { ...data, ...incoming };
+
+  if (incoming.trigger === "donor") showDonor();
+  else if (incoming.trigger === "account") showAccount();
+  else if (incoming.trigger === "both") showBoth();
+  else if (incoming.trigger === "hide") hideAll();
 });
+
 updateDonor();
-updateAmount(remoteData.amount);
+updateAmount(data.amount);
 </script>
+
+</head>
+<body>
+
+<div class="display">
+    <div id="donorAlert" class="donor-alert">
+        <span id="eventText" class="event">~팅커벨</span>
+        <span class="arrow">▶</span>
+        <span id="donorText">김종독</span>
+    </div>
+    <div id="accountAlert" class="account-alert">
+        <div class="account-title">계좌 후원</div>
+        <div id="amountText" class="account-amount">62,000</div>
+    </div>
+</div>
 
 </body>
 </html>
