@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>후원랭킹 DISPLAY</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:transparent;font-family:Arial,Helvetica,sans-serif}
+body{color:#1b2430}
+.panel{width:min(620px,94vw);margin:20px auto}
+.title{background:#101826;color:#f4e6b3;text-align:center;padding:14px 16px;font-size:22px;font-weight:900;letter-spacing:.4px;border-radius:14px 14px 0 0}
+.subtitle{background:#e7c96b;color:#18202b;text-align:center;padding:8px 16px;font-size:12px;font-weight:900}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #c6cbd3}
+th{background:#1b2432;color:#fff;padding:9px 6px;font-size:12px}
+td{padding:8px 7px;font-size:13px}
+.rank{width:55px;text-align:center;font-weight:900;background:#f2f4f7}
+.name{font-weight:900}
+.amount{text-align:right;font-weight:900;color:#8b6b15}
+tfoot td{background:#d9b85a;color:#1a1a1a;font-weight:900}
+.control-box{background:#181d25;color:#fff;border:1px solid #46505d;border-radius:14px;padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+.control-box h2{margin:0 0 12px;font-size:18px;color:#f4e6b3}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;grid-template-columns:42px 1fr;gap:6px;align-items:center}
+.field label{font-size:11px;color:#abb2bb}
+.field input{width:100%;height:34px;border:1px solid #5a6470;background:#0d1117;color:#fff;border-radius:6px;padding:0 9px;font-size:13px}
+.player-inputs{display:grid;gap:6px}
+.buttons{display:flex;gap:8px;margin-top:12px}
+button{height:36px;border:0;border-radius:7px;font-weight:900;cursor:pointer;padding:0 16px}
+.primary{background:#d9b85a;color:#171717}
+.secondary{background:#fff;color:#171717}
+.status{margin-top:9px;font-size:11px;color:#aeb6bf}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.panel{width:92vw}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+.display-wrap{width:min(620px,94vw);margin:20px auto}
+.display-card{border-radius:14px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+</style>
+</head><body>
+<div class="display-wrap"><div class="display-card">
+<div class="title">LIVE SUPPORT RANKING</div>
+<div class="subtitle">방송 후원 TOP 5</div>
+<table><thead><tr><th>순위</th><th>스트리머</th><th>후원</th></tr></thead>
+<tbody id="rows"></tbody>
+<tfoot>
+<tr><td></td><td>국고</td><td id="treasury" class="amount">0</td></tr>
+<tr><td></td><td>총 매출</td><td id="total" class="amount">0</td></tr>
+</tfoot></table>
+</div></div>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const RANKING_REF = db.ref("support_ranking");
+
+const rowsEl=document.getElementById("rows");
+function fmt(v){return Number(v||0).toLocaleString("ko-KR");}
+function render(data){
+  const players=(data?.players||[]).filter(p=>p&&p.name)
+    .map(p=>({name:String(p.name),amount:Number(p.amount)||0}))
+    .sort((a,b)=>b.amount-a.amount);
+  const top5=players.slice(0,5);
+  rowsEl.innerHTML="";
+  for(let i=0;i<5;i++){
+    const p=top5[i];
+    const tr=document.createElement("tr");
+    const tdRank=document.createElement("td"); tdRank.className="rank"; tdRank.textContent=String(i+1);
+    const tdName=document.createElement("td"); tdName.className="name"; tdName.textContent=p?p.name:"";
+    const tdAmount=document.createElement("td"); tdAmount.className="amount"; tdAmount.textContent=p?fmt(p.amount):"";
+    tr.append(tdRank,tdName,tdAmount); rowsEl.appendChild(tr);
+  }
+  const treasury=Number(data?.treasury)||0;
+  const sum=top5.reduce((s,p)=>s+p.amount,0);
+  document.getElementById("treasury").textContent=fmt(treasury);
+  document.getElementById("total").textContent=fmt(sum+treasury);
+}
+RANKING_REF.on("value",snap=>render(snap.val()||{players:[],treasury:0}));
+</script></body></html>
