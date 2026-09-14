@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>후원랭킹 CONTROL</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:transparent;font-family:Arial,Helvetica,sans-serif}
+body{color:#1b2430}
+.panel{width:min(620px,94vw);margin:20px auto}
+.title{background:#101826;color:#f4e6b3;text-align:center;padding:14px 16px;font-size:22px;font-weight:900;letter-spacing:.4px;border-radius:14px 14px 0 0}
+.subtitle{background:#e7c96b;color:#18202b;text-align:center;padding:8px 16px;font-size:12px;font-weight:900}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #c6cbd3}
+th{background:#1b2432;color:#fff;padding:9px 6px;font-size:12px}
+td{padding:8px 7px;font-size:13px}
+.rank{width:55px;text-align:center;font-weight:900;background:#f2f4f7}
+.name{font-weight:900}
+.amount{text-align:right;font-weight:900;color:#8b6b15}
+tfoot td{background:#d9b85a;color:#1a1a1a;font-weight:900}
+.control-box{background:#181d25;color:#fff;border:1px solid #46505d;border-radius:14px;padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+.control-box h2{margin:0 0 12px;font-size:18px;color:#f4e6b3}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:grid;grid-template-columns:42px 1fr;gap:6px;align-items:center}
+.field label{font-size:11px;color:#abb2bb}
+.field input{width:100%;height:34px;border:1px solid #5a6470;background:#0d1117;color:#fff;border-radius:6px;padding:0 9px;font-size:13px}
+.player-inputs{display:grid;gap:6px}
+.buttons{display:flex;gap:8px;margin-top:12px}
+button{height:36px;border:0;border-radius:7px;font-weight:900;cursor:pointer;padding:0 16px}
+.primary{background:#d9b85a;color:#171717}
+.secondary{background:#fff;color:#171717}
+.status{margin-top:9px;font-size:11px;color:#aeb6bf}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.panel{width:92vw}}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="panel"><div class="control-box">
+<h2>후원랭킹 CONTROL</h2>
+<div class="grid">
+<div class="field"><label>1번</label><div class="player-inputs"><input id="name1" placeholder="스트리머 이름"><input id="amt1" type="number" min="0" placeholder="후원 금액"></div></div><div class="field"><label>2번</label><div class="player-inputs"><input id="name2" placeholder="스트리머 이름"><input id="amt2" type="number" min="0" placeholder="후원 금액"></div></div><div class="field"><label>3번</label><div class="player-inputs"><input id="name3" placeholder="스트리머 이름"><input id="amt3" type="number" min="0" placeholder="후원 금액"></div></div><div class="field"><label>4번</label><div class="player-inputs"><input id="name4" placeholder="스트리머 이름"><input id="amt4" type="number" min="0" placeholder="후원 금액"></div></div><div class="field"><label>5번</label><div class="player-inputs"><input id="name5" placeholder="스트리머 이름"><input id="amt5" type="number" min="0" placeholder="후원 금액"></div></div>
+<div class="field"><label>국고</label><input id="treasury" type="number" min="0" placeholder="국고"></div>
+</div>
+<div class="buttons">
+<button class="primary" onclick="save()">APPLY</button>
+<button class="secondary" onclick="resetForm()">RESET</button>
+</div>
+<div id="status" class="status">Firebase 연결 중...</div>
+</div></div>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const RANKING_REF = db.ref("support_ranking");
+
+const statusEl=document.getElementById("status");
+const inputs=Array.from({length:5},(_,i)=>({name:document.getElementById("name"+(i+1)),amt:document.getElementById("amt"+(i+1))}));
+const treasury=document.getElementById("treasury");
+
+function collect(){
+  return {
+    players:inputs.map(x=>({name:x.name.value.trim(),amount:Math.max(0,Number(x.amt.value)||0)})),
+    treasury:Math.max(0,Number(treasury.value)||0),
+    updatedAt:Date.now()
+  };
+}
+function save(){
+  RANKING_REF.set(collect()).then(()=>{
+    statusEl.textContent="저장 완료 · DISPLAY에 실시간 반영";
+  }).catch(e=>{
+    statusEl.textContent="저장 오류: "+e.message;
+  });
+}
+function resetForm(){
+  inputs.forEach(x=>{x.name.value="";x.amt.value="";});
+  treasury.value="";
+}
+RANKING_REF.on("value",snap=>{
+  const d=snap.val();
+  if(!d){statusEl.textContent="Firebase 연결됨 · 아직 저장된 데이터 없음";return;}
+  (d.players||[]).slice(0,5).forEach((p,i)=>{
+    if(inputs[i]){
+      inputs[i].name.value=p?.name||"";
+      inputs[i].amt.value=p?.amount??"";
+    }
+  });
+  treasury.value=d.treasury??0;
+  statusEl.textContent="Firebase 연결됨 · 실시간 동기화 중";
+});
+</script>
+</body></html>
