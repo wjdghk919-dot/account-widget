@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>후원랭킹 CONTROL</title>
+<style>
+html,body{
+  margin:0;padding:0;background:transparent;
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+.control{
+  width:520px;margin:20px;
+  background:#111820;color:#fff;
+  border:1px solid #45505d;border-radius:12px;
+  overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.24);
+}
+.header{
+  padding:11px 14px;background:#182230;
+  color:#fff4cf;font-size:17px;font-weight:900;
+}
+.body{padding:12px}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #424c58;padding:5px}
+th{height:30px;background:#1f2b39;color:#fff;font-size:11px}
+td{height:38px}
+.num{width:46px;text-align:center;color:#e3c66e;font-weight:900}
+td input{
+  width:100%;height:30px;border:1px solid #5c6773;border-radius:5px;
+  background:#0b1016;color:#fff;padding:0 8px;font-size:12px;outline:none;
+}
+.treasury{
+  margin-top:7px;display:grid;grid-template-columns:1fr 140px;gap:6px;align-items:center;
+}
+.treasuryLabel{
+  height:30px;display:flex;align-items:center;padding-left:8px;border-radius:4px;
+  background:#fff1bf;color:#4e3b00;font-size:11px;font-weight:900;
+}
+.actions{display:flex;gap:8px;margin-top:10px}
+button{
+  height:35px;padding:0 16px;border:0;border-radius:6px;
+  font-size:11px;font-weight:900;cursor:pointer;
+}
+.apply{background:#d9b85a;color:#171717}
+.reset{background:#fff;color:#171717}
+.status{margin-top:8px;color:#aeb6bf;font-size:10px}
+.hint{margin-top:5px;color:#77818c;font-size:9px}
+@media(max-width:600px){
+  .control{width:92vw;margin:10px auto}
+}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="control">
+<div class="header">후원랭킹 CONTROL</div>
+<div class="body">
+<table><thead><tr><th style="width:46px">번호</th><th>스트리머</th><th style="width:140px">후원</th></tr></thead>
+<tbody><tr><td class="num">1</td><td><input id="name1" maxlength="20" placeholder="스트리머 이름"></td><td><input id="amt1" type="number" min="0" inputmode="numeric" placeholder="후원 금액"></td></tr><tr><td class="num">2</td><td><input id="name2" maxlength="20" placeholder="스트리머 이름"></td><td><input id="amt2" type="number" min="0" inputmode="numeric" placeholder="후원 금액"></td></tr><tr><td class="num">3</td><td><input id="name3" maxlength="20" placeholder="스트리머 이름"></td><td><input id="amt3" type="number" min="0" inputmode="numeric" placeholder="후원 금액"></td></tr><tr><td class="num">4</td><td><input id="name4" maxlength="20" placeholder="스트리머 이름"></td><td><input id="amt4" type="number" min="0" inputmode="numeric" placeholder="후원 금액"></td></tr><tr><td class="num">5</td><td><input id="name5" maxlength="20" placeholder="스트리머 이름"></td><td><input id="amt5" type="number" min="0" inputmode="numeric" placeholder="후원 금액"></td></tr></tbody></table>
+<div class="treasury"><div class="treasuryLabel">국고</div><input id="treasury" type="number" min="0" inputmode="numeric" placeholder="0"></div>
+<div class="actions"><button class="apply" onclick="save()">APPLY</button><button class="reset" onclick="resetForm()">RESET</button></div>
+<div id="status" class="status">Firebase 연결 중...</div>
+<div class="hint">이름과 후원 금액을 입력하고 APPLY하면 DISPLAY에서 자동으로 금액순 정렬됩니다.</div>
+</div></div>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const RANKING_REF = db.ref("support_ranking");
+
+const statusEl = document.getElementById("status");
+const people = Array.from({length:5}, (_,i) => ({
+  name: document.getElementById("name" + (i+1)),
+  amount: document.getElementById("amt" + (i+1))
+}));
+const treasury = document.getElementById("treasury");
+
+function collect(){
+  return {
+    players: people.map(p => ({
+      name: p.name.value.trim(),
+      amount: Math.max(0, Number(p.amount.value) || 0)
+    })),
+    treasury: Math.max(0, Number(treasury.value) || 0),
+    updatedAt: Date.now()
+  };
+}
+
+function save(){
+  RANKING_REF.set(collect())
+    .then(function(){
+      statusEl.textContent = "저장 완료 · DISPLAY에 실시간 반영";
+    })
+    .catch(function(err){
+      statusEl.textContent = "저장 오류: " + err.message;
+    });
+}
+
+function resetForm(){
+  people.forEach(function(p){
+    p.name.value = "";
+    p.amount.value = "";
+  });
+  treasury.value = "";
+}
+
+RANKING_REF.on("value", function(snapshot){
+  const data = snapshot.val();
+  if(!data){
+    statusEl.textContent = "Firebase 연결됨 · 아직 저장된 데이터 없음";
+    return;
+  }
+
+  (data.players || []).slice(0,5).forEach(function(p,i){
+    people[i].name.value = (p && p.name) || "";
+    people[i].amount.value = (p && p.amount !== undefined) ? p.amount : "";
+  });
+
+  treasury.value = data.treasury !== undefined ? data.treasury : 0;
+  statusEl.textContent = "Firebase 연결됨 · 실시간 동기화 중";
+});
+
+</script>
+</body>
+</html>
