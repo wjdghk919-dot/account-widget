@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ANNE B - HUD DISPLAY</title>
+<style>
+html,body{margin:0;padding:0;background:transparent;font-family:"Arial Black","Noto Sans KR","Malgun Gothic",sans-serif;}
+.hud{
+ position:absolute;left:40px;top:50px;width:650px;padding:18px 24px 22px;
+ box-sizing:border-box;color:#111;background:rgba(255,255,255,.96);
+ border:3px solid #111;border-radius:4px;box-shadow:8px 8px 0 #111;overflow:hidden;
+}
+.hud-top{display:flex;align-items:center;justify-content:space-between;gap:18px;height:62px;}
+.hud-account{color:#111;font-size:36px;font-weight:1000;letter-spacing:-.7px;white-space:nowrap;}
+.hud-current{min-width:0;color:#111;font-size:35px;font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right;letter-spacing:-.7px;}
+.hud-current.changing{animation:rollChange .32s ease;}
+@keyframes rollChange{0%{opacity:0;transform:translateY(14px)}55%{opacity:1;transform:translateY(-2px)}100%{opacity:1;transform:translateY(0)}}
+.hud-divider{height:5px;margin:12px 0 19px;background:#111;}
+.notice-title{margin-bottom:10px;color:#111;font-size:34px;font-weight:1000;letter-spacing:-.8px;}
+.notice-list{display:flex;flex-direction:column;gap:7px;}
+.notice-line{color:#111;font-size:31px;line-height:1.18;font-weight:900;letter-spacing:-.5px;}
+.notice-line::before{content:"• ";color:#111;}
+.rank-title{margin-top:20px;margin-bottom:10px;padding-top:14px;border-top:2px solid #111;color:#111;font-size:34px;font-weight:1000;letter-spacing:-.8px;}
+.rank-list{display:flex;flex-direction:column;gap:6px;}
+.rank-row{display:flex;align-items:center;justify-content:space-between;font-size:31px;line-height:1.2;font-weight:1000;letter-spacing:-.5px;}
+.rank-name{color:#111;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-name::before{content:"";}
+.rank-value{color:#111;margin-left:20px;font-weight:1000;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script></head><body><div class="hud">
+  <div class="hud-top">
+    <div class="hud-account" id="accountLabel">계좌</div>
+    <div id="currentText" class="hud-current">죽밥 ♥ 100,000</div>
+  </div>
+  <div class="hud-divider"></div>
+  <div id="noticeTitle" class="notice-title">현재미션</div>
+  <div id="noticeList" class="notice-list"></div>
+  <div id="rankTitle" class="rank-title">참가자</div>
+  <div id="rankList" class="rank-list"></div>
+</div><script>
+let activeDonations=[];
+let currentDonationIndex=0;
+let rollingTimer=null;
+let lastRollingSeconds=3;
+function formatAmount(value){
+  const raw=String(value).replace(/,/g,"").trim(); const n=Number(raw);
+  return Number.isNaN(n)?String(value):n.toLocaleString("ko-KR")+"원";
+}
+function renderNotices(notices,title){
+  document.getElementById("noticeTitle").textContent=title||"현재미션";
+  const list=document.getElementById("noticeList"); list.innerHTML="";
+  (Array.isArray(notices)?notices:[]).filter(Boolean).forEach(item=>{const d=document.createElement("div");d.className="notice-line";d.textContent=item;list.appendChild(d);});
+}
+function renderRanks(ranks,title){
+  document.getElementById("rankTitle").textContent=title||"참가자";
+  const list=document.getElementById("rankList"); list.innerHTML="";
+  (Array.isArray(ranks)?ranks:[]).filter(x=>x&&x.name).forEach(item=>{
+    const row=document.createElement("div");row.className="rank-row";
+    const name=document.createElement("div");name.className="rank-name";name.textContent=item.name;
+    const value=document.createElement("div");value.className="rank-value";value.textContent="("+(item.value||"")+")";
+    row.append(name,value);list.appendChild(row);
+  });
+}
+function showNextDonation(){
+  const currentText=document.getElementById("currentText");
+  if(activeDonations.length===0){currentText.textContent="후원 대기";return;}
+  if(currentDonationIndex>=activeDonations.length)currentDonationIndex=0;
+  const item=activeDonations[currentDonationIndex];
+  currentText.textContent=(item.name||"후원자")+" ♥ "+formatAmount(item.amount||"0").replace("원","");
+  currentText.classList.remove("changing");void currentText.offsetWidth;currentText.classList.add("changing");
+  currentDonationIndex++;
+}
+function restartRolling(seconds){
+  clearInterval(rollingTimer);currentDonationIndex=0;showNextDonation();
+  let s=Number(seconds);if(!Number.isFinite(s)||s<1)s=3;if(s>30)s=30;lastRollingSeconds=s;
+  if(activeDonations.length>1)rollingTimer=setInterval(showNextDonation,s*1000);
+}
+const firebaseConfig = {
+  apiKey:"AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",authDomain:"broadcast-widgets.firebaseapp.com",
+  databaseURL:"https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"broadcast-widgets",
+  storageBucket:"broadcast-widgets.firebasestorage.app",messagingSenderId:"711117372939",appId:"1:711117372939:web:470a6f5acf88691a12510e",measurementId:"G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);const db=firebase.database();const HUD_REF=db.ref("hud_mission");
+HUD_REF.on("value",snapshot=>{
+  const data=snapshot.val(); if(!data)return;
+  document.getElementById("accountLabel").textContent=data.accountLabel||"계좌";
+  activeDonations=Array.isArray(data.donations)?data.donations.filter(x=>x && (String(x.name||"").trim()!=="" || String(x.amount||"").trim()!=="")):[];
+  renderNotices(data.notices,data.noticeTitle);
+  renderRanks(data.ranks,data.rankTitle);
+  restartRolling(data.rollingSeconds||3);
+});
+</script></body></html>
