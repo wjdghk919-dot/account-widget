@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>방송 알림판 CONTROL</title>
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    background:#111;
+    font-family:Arial,sans-serif;
+    color:#fff;
+}
+.control{
+    width:450px;
+    margin:30px;
+    padding:18px;
+    box-sizing:border-box;
+    background:#18191d;
+    border:1px solid #555;
+    border-radius:12px;
+    box-shadow:0 12px 28px rgba(0,0,0,.35);
+}
+.control h2{
+    margin:0 0 16px;
+    font-size:21px;
+}
+.field{
+    margin-bottom:12px;
+}
+.field label{
+    display:block;
+    margin-bottom:5px;
+    color:#aaa;
+    font-size:12px;
+}
+.field input,
+.field textarea,
+.field select{
+    width:100%;
+    box-sizing:border-box;
+    border:1px solid #777;
+    border-radius:5px;
+    background:#fff;
+    color:#111;
+    outline:none;
+    font-size:15px;
+}
+.field input{
+    height:36px;
+    padding:0 10px;
+}
+.field textarea{
+    min-height:150px;
+    padding:10px;
+    resize:vertical;
+    line-height:1.45;
+}
+.size-row{
+    display:grid;
+    grid-template-columns:1fr 105px;
+    gap:10px;
+    align-items:center;
+}
+.field input[type="number"]{
+    text-align:center;
+}
+.buttons{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+}
+button{
+    height:36px;
+    padding:0 15px;
+    border:0;
+    border-radius:6px;
+    font-size:14px;
+    font-weight:900;
+    cursor:pointer;
+}
+.apply-button{
+    background:#d8b84c;
+    color:#111;
+}
+.reset-button{
+    background:#777;
+    color:#fff;
+}
+.status{
+    margin-top:12px;
+    color:#9fdc89;
+    font-size:12px;
+}
+.note{
+    margin-top:10px;
+    color:#888;
+    font-size:11px;
+    line-height:1.4;
+}
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+
+<body>
+<div class="control">
+    <h2>방송 알림판 CONTROL</h2>
+
+    <div class="field">
+        <label>제목</label>
+        <input id="titleInput" type="text" value="공지사항">
+    </div>
+
+    <div class="field">
+        <label>내용</label>
+        <textarea id="bodyInput" placeholder="방송에 표시할 내용을 입력하세요."></textarea>
+    </div>
+
+    <div class="field">
+        <label>내용 글자 크기</label>
+        <div class="size-row">
+            <input id="fontSizeInput" type="number" min="12" max="80" value="24">
+            <div style="color:#aaa;font-size:12px;text-align:center;">px</div>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <button class="apply-button" onclick="applyNotice()">APPLY</button>
+        <button class="reset-button" onclick="resetNotice()">RESET</button>
+    </div>
+
+    <div id="status" class="status">Firebase 연결 중...</div>
+
+    <div class="note">
+        제목은 위쪽에 표시되고, 제목 아래에 구분선이 들어갑니다.<br>
+        내용 글자 크기는 12~80px 사이에서 직접 조절할 수 있습니다.
+    </div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQn1Kr8",
+    authDomain: "broadcast-widgets.firebaseapp.com",
+    databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "broadcast-widgets",
+    storageBucket: "broadcast-widgets.firebasestorage.app",
+    messagingSenderId: "711117372939",
+    appId: "1:711117372939:web:470a6f5acf88691a12510e",
+    measurementId: "G-080YENY338"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const REF = db.ref("notice_board_01");
+
+function setStatus(message, ok=true){
+    const el = document.getElementById("status");
+    el.textContent = message;
+    el.style.color = ok ? "#9fdc89" : "#ff8f8f";
+}
+
+function readData(){
+    let size = Number(document.getElementById("fontSizeInput").value) || 24;
+    size = Math.max(12, Math.min(80, size));
+
+    return {
+        title: document.getElementById("titleInput").value.trim(),
+        body: document.getElementById("bodyInput").value,
+        fontSize: size
+    };
+}
+
+function applyNotice(){
+    REF.set(readData())
+        .then(() => setStatus("저장 완료 · DISPLAY에 실시간 반영됨"))
+        .catch((error) => {
+            console.error(error);
+            setStatus("Firebase 저장 실패", false);
+        });
+}
+
+function resetNotice(){
+    document.getElementById("titleInput").value = "공지사항";
+    document.getElementById("bodyInput").value = "";
+    document.getElementById("fontSizeInput").value = "24";
+    applyNotice();
+}
+
+REF.on("value", (snapshot) => {
+    if(snapshot.exists()){
+        const data = snapshot.val() || {};
+        if(data.title !== undefined) document.getElementById("titleInput").value = data.title;
+        if(data.body !== undefined) document.getElementById("bodyInput").value = data.body;
+        if(data.fontSize !== undefined) document.getElementById("fontSizeInput").value = data.fontSize;
+        setStatus("Firebase 연결됨 · 실시간 동기화 중");
+    }else{
+        setStatus("Firebase 연결됨 · 아직 저장된 데이터 없음");
+    }
+}, (error) => {
+    console.error(error);
+    setStatus("Firebase 연결 오류", false);
+});
+</script>
+</body>
+</html>
