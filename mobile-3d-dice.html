@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101522">
+<title>모바일 3D 주사위</title>
+<style>
+:root{--size:min(48vw,210px);--mint:#79e5d3;--ink:#f7f8fc;--muted:#b5bfd0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:var(--ink)}
+body{background:transparent;overflow:hidden;touch-action:manipulation}
+.widget{position:relative;width:100%;height:100%;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,3vh,22px);padding:16px;background:transparent;text-align:center}
+.glow{position:absolute;width:75%;height:55%;border-radius:50%;background:radial-gradient(ellipse,#79e5d31c,transparent 70%);pointer-events:none}
+.kicker{z-index:1;font-size:11px;letter-spacing:.25em;color:var(--muted);font-weight:800}
+.scene{z-index:1;width:var(--size);height:var(--size);perspective:850px;display:grid;place-items:center;filter:drop-shadow(0 22px 22px #0005)}
+.die{position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:rotateX(-20deg) rotateY(-30deg)}
+.face{position:absolute;inset:0;border-radius:clamp(14px,4vw,25px);background:linear-gradient(145deg,#fff 0%,#edf1f7 45%,#c9d2e0 100%);border:2px solid #fff;box-shadow:inset -8px -10px 20px #9ca8ba,inset 7px 7px 14px #fff;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:15%;gap:2%;backface-visibility:hidden}
+.front{transform:translateZ(calc(var(--size)/2))}
+.back{transform:rotateY(180deg) translateZ(calc(var(--size)/2))}
+.right{transform:rotateY(90deg) translateZ(calc(var(--size)/2))}
+.left{transform:rotateY(-90deg) translateZ(calc(var(--size)/2))}
+.top{transform:rotateX(90deg) translateZ(calc(var(--size)/2))}
+.bottom{transform:rotateX(-90deg) translateZ(calc(var(--size)/2))}
+.pip{align-self:center;justify-self:center;width:63%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 30% 25%,#485469,#121827 72%);box-shadow:inset 1px 2px 3px #0008}
+.result{z-index:1;font-size:clamp(34px,9vw,62px);font-weight:950;line-height:1;min-height:1em;text-shadow:0 3px 18px #0005}
+.status{z-index:1;color:var(--muted);font-size:12px;min-height:1.2em}
+button{z-index:2;appearance:none;border:1px solid #c7fff4;border-radius:999px;padding:14px 27px;min-width:180px;background:linear-gradient(135deg,#a0f6e8,#5ad4c0);color:#09211e;font-size:16px;font-weight:900;box-shadow:0 8px 26px #43cbb533;cursor:pointer;touch-action:manipulation}
+button:active{transform:scale(.97)}button:disabled{opacity:.7}
+.hint{z-index:1;font-size:10px;color:#b5bfd099;max-width:280px;line-height:1.45}
+@media(min-width:600px){:root{--size:210px}}
+</style>
+</head>
+<body>
+<main class="widget">
+  <div class="glow"></div>
+  <div class="kicker">DICE ROLL</div>
+  <div class="scene"><div class="die" id="die">
+    <div class="face front" data-v="1"></div><div class="face back" data-v="6"></div>
+    <div class="face right" data-v="3"></div><div class="face left" data-v="4"></div><div class="face top" data-v="2"></div><div class="face bottom" data-v="5"></div>
+  </div></div>
+  <div class="result" id="result">—</div>
+  <div class="status" id="status">버튼을 눌러 주사위를 굴리세요</div>
+  <button id="roll" type="button">🎲 주사위 굴리기</button>
+  <div class="hint">투명 배경 · 1~6 무작위 · 터치 조작</div>
+</main>
+<script>
+const spots={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+document.querySelectorAll('.face').forEach(face=>{let n=+face.dataset.v;for(let i=0;i<9;i++){let p=document.createElement('i');if(spots[n].includes(i))p.className='pip';face.appendChild(p)}});
+const die=document.getElementById('die'),out=document.getElementById('result'),status=document.getElementById('status'),btn=document.getElementById('roll');
+const faces={1:[-20,-30],2:[-110,-30],3:[-20,-120],4:[-20,60],5:[70,-30],6:[-200,-30]};
+let x=-20,y=-30,busy=false;
+function secureRoll(){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%6+1}
+btn.addEventListener('click',()=>{
+ if(busy)return;busy=true;btn.disabled=true;out.textContent='…';status.textContent='굴리는 중…';
+ const n=secureRoll(),f=faces[n];
+ x+=720+f[0]-(((x%360)+360)%360);y+=720+f[1]-(((y%360)+360)%360);
+ die.style.transition='transform 1.45s cubic-bezier(.16,.72,.12,1)';
+ die.style.transform=`rotateX(${x}deg) rotateY(${y}deg)`;
+ setTimeout(()=>{out.textContent=String(n);status.textContent='결과가 나왔어요';busy=false;btn.disabled=false;},1500);
+});
+</script>
+</body>
+</html>
