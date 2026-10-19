@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>말판 디스플레이</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{--tile-alpha:.8;--ice:#b9dcff;--gold:#ffdf9a}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;color:#fff}
+#board{
+ position:relative;
+ width:min(100vw,56.25vh);
+ height:min(100vh,177.7778vw);
+ margin:auto;
+ --tile-alpha:.8;
+}
+.tile{
+ position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:clamp(2px,.4vh,5px);padding:2px;overflow:hidden;text-align:center;isolation:isolate;
+ border:1px solid rgba(185,218,255,.72);
+ border-radius:clamp(7px,1.9vw,13px);
+ background:linear-gradient(145deg,rgba(39,52,75,var(--tile-alpha)),rgba(13,20,34,var(--tile-alpha)));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -5px 12px rgba(0,0,0,.2),0 2px 7px rgba(0,0,0,.2),0 0 8px rgba(99,158,255,.12);
+}
+.tile:before{content:"";position:absolute;inset:0 0 auto;height:36%;background:linear-gradient(180deg,rgba(255,255,255,.1),transparent);pointer-events:none;z-index:-1}
+.tile .num{font-weight:950;font-size:clamp(11px,2.7vw,23px);line-height:1;color:#f4f8ff;letter-spacing:-.04em;text-shadow:0 2px 5px rgba(0,0,0,.9)}
+.tile .label{font-weight:800;font-size:clamp(7px,1.7vw,15px);line-height:1.12;color:#e5edfc;max-width:100%;overflow-wrap:anywhere;text-shadow:0 1px 4px rgba(0,0,0,.95)}
+.tile.active{
+ border:1.5px solid #ffe4a0;
+ background:linear-gradient(145deg,rgba(95,69,28,var(--tile-alpha)),rgba(31,24,17,var(--tile-alpha)));
+ box-shadow:inset 0 0 0 1px rgba(255,229,165,.42),inset 0 1px 0 rgba(255,255,255,.28),0 0 9px rgba(255,203,94,.72),0 0 19px rgba(255,183,58,.3);
+}
+.tile.active .num{color:#ffe8b4;text-shadow:0 0 9px rgba(255,205,97,.4),0 2px 4px #000}
+.tile.start{border-color:rgba(116,224,255,.95);box-shadow:inset 0 0 0 1px rgba(116,224,255,.2),0 0 10px rgba(68,197,255,.18)}
+.tile.start .num{color:#a9eaff}
+#diceLayer{position:absolute;inset:20% max(18%,calc((100vw - 56.25vh)/2 + 18%));display:none;align-items:center;justify-content:center;pointer-events:none;z-index:10}
+#diceLayer.show{display:flex}
+.dice-wrap{display:flex;flex-direction:column;align-items:center;gap:clamp(14px,3vh,25px);filter:drop-shadow(0 12px 22px rgba(0,0,0,.45))}
+.die{--dice-size:min(27vw,145px,18vh);width:var(--dice-size);height:var(--dice-size);position:relative;transform-style:preserve-3d;animation:roll .72s cubic-bezier(.2,.8,.2,1) infinite alternate}
+.face{position:absolute;width:100%;height:100%;border-radius:19%;background:linear-gradient(145deg,#fff 0%,#edf3fb 47%,#cbd8e9 100%);border:2px solid rgba(255,255,255,.98);box-shadow:inset -7px -8px 14px rgba(38,55,82,.16),inset 4px 4px 10px #fff,0 0 0 1px rgba(80,142,230,.22);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:16%;gap:4%;backface-visibility:hidden}
+.pip{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 32% 25%,#425879,#111d32 72%);box-shadow:inset 1px 1px 2px rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.2);align-self:center;justify-self:center}
+.f1{transform:translateZ(calc(var(--dice-size)/2))}
+.f2{transform:rotateY(180deg) translateZ(calc(var(--dice-size)/2))}
+.f3{transform:rotateY(90deg) translateZ(calc(var(--dice-size)/2))}
+.f4{transform:rotateY(-90deg) translateZ(calc(var(--dice-size)/2))}
+.f5{transform:rotateX(90deg) translateZ(calc(var(--dice-size)/2))}
+.f6{transform:rotateX(-90deg) translateZ(calc(var(--dice-size)/2))}
+@keyframes roll{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(410deg) rotateY(530deg) rotateZ(110deg)}}
+#result{font-weight:1000;font-size:clamp(34px,10vw,78px);line-height:1;color:#fff;text-shadow:0 0 8px #73baff,0 0 22px #398dff,0 3px 8px #000;letter-spacing:-.04em}
+#result.hidden{display:none}
+#piece{position:absolute;z-index:5;width:clamp(17px,3.2vw,30px);height:clamp(17px,3.2vw,30px);border-radius:50%;background:radial-gradient(circle at 30% 22%,#fff8d7 0%,#ffd16d 30%,#f5a623 58%,#a84e11 100%);border:2px solid #fff0c4;box-shadow:inset 0 1px 2px #fff8,0 0 10px rgba(255,184,57,.9),0 2px 4px #000;transform:translate(-50%,-50%);transition:left .45s cubic-bezier(.2,.8,.2,1),top .45s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+#piece.hide{display:none}
+#piece.hop{animation:pieceHop .28s cubic-bezier(.2,.7,.25,1)}
+@keyframes pieceHop{0%{margin-top:0;transform:translate(-50%,-50%) scale(1)}42%{margin-top:-13px;transform:translate(-50%,-50%) scale(1.13)}75%{margin-top:1px;transform:translate(-50%,-50%) scale(.96)}100%{margin-top:0;transform:translate(-50%,-50%) scale(1)}}
+#landingOverlay{position:absolute;z-index:9;left:50%;top:50%;transform:translate(-50%,-50%);width:min(72%,360px);padding:clamp(14px,3vh,24px) clamp(16px,4vw,28px);border:1px solid rgba(183,218,255,.72);border-radius:18px;background:linear-gradient(145deg,rgba(23,34,55,.94),rgba(8,14,26,.92));box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 12px 32px rgba(0,0,0,.25),0 0 20px rgba(87,151,255,.13);text-align:center;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s ease;pointer-events:none;backdrop-filter:blur(5px)}
+#landingOverlay.show{opacity:1;visibility:visible}
+#landingOverlay .eyebrow{font-size:clamp(10px,2.4vw,13px);letter-spacing:.16em;font-weight:900;color:#9fc9ff;margin-bottom:7px}
+#landingOverlay .landing-num{font-size:clamp(18px,4.5vw,28px);font-weight:950;color:#fff;line-height:1.1;margin-bottom:8px}
+#landingOverlay .landing-label{font-size:clamp(23px,6vw,42px);font-weight:1000;line-height:1.18;color:#ffe4a3;text-shadow:0 0 14px rgba(255,196,86,.22);overflow-wrap:anywhere}
+@media (min-aspect-ratio:10/16){
+ #board{width:min(100vw,56.25vh);height:min(100vh,177.7778vw)}
+}
+@media (prefers-reduced-motion:reduce){#piece{transition:none}.die{animation-duration:1.5s}}
+</style></head>
+<body><div id="board"></div><div id="piece" class="hide"></div>
+<div id="diceLayer"><div class="dice-wrap">
+<div class="die" id="die">
+<div class="face f1"><i class="pip" style="grid-area:2/2"></i></div>
+<div class="face f2"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div>
+<div class="face f3"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/3"></i></div>
+<div class="face f4"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div>
+<div class="face f5"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/2"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:3/3"></i></div>
+<div class="face f6"><i class="pip" style="grid-area:1/1"></i><i class="pip" style="grid-area:2/1"></i><i class="pip" style="grid-area:3/1"></i><i class="pip" style="grid-area:1/3"></i><i class="pip" style="grid-area:2/3"></i><i class="pip" style="grid-area:3/3"></i></div>
+</div><div id="result" class="hidden"></div></div></div>
+<div id="landingOverlay" aria-live="polite"><div class="eyebrow">도착한 칸</div><div class="landing-num" id="landingNum"></div><div class="landing-label" id="landingLabel"></div></div>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const REF = db.ref("dice_board_game");
+
+const board=document.getElementById('board'), diceLayer=document.getElementById('diceLayer'), die=document.getElementById('die'), resultEl=document.getElementById('result'), piece=document.getElementById('piece');
+const landingOverlay=document.getElementById('landingOverlay'), landingNum=document.getElementById('landingNum'), landingLabel=document.getElementById('landingLabel');
+const defaultLabels=["시작","한 잔","미션","휴식","선물","꽝","선택","벌칙","한 잔","패스","미션","휴식","선물","꽝","한 잔","선택","벌칙","휴식","미션","선물","벌칙","선택","꽝","한 잔"];
+let current={labels:defaultLabels,position:0,opacity:80,diceVisible:false,rolling:false,result:null,showBoard:true};
+let visualPosition=0, lastReceivedPosition=null, initialized=false, moving=false, menuTimer=null, moveQueue=Promise.resolve();
+function positions(){
+ // 세로 9:16 프레임: 6칸 위 + 6칸 오른쪽 + 6칸 아래 + 6칸 왼쪽
+ const arr=[], sideW=15.5, topH=7.8, sideArea=100-2*topH, sideH=sideArea/6;
+ for(let c=0;c<6;c++) arr.push({left:c*(100/6),top:0,width:100/6,height:topH});
+ for(let r=0;r<6;r++) arr.push({left:100-sideW,top:topH+r*sideH,width:sideW,height:sideH});
+ for(let c=5;c>=0;c--) arr.push({left:c*(100/6),top:100-topH,width:100/6,height:topH});
+ for(let r=5;r>=0;r--) arr.push({left:0,top:topH+r*sideH,width:sideW,height:sideH});
+ return arr;
+}
+const pos=positions();
+function placeDiceZone(){
+ const rect=board.getBoundingClientRect();
+ diceLayer.style.left=rect.left+'px';diceLayer.style.top=(rect.top+rect.height*.20)+'px';
+ diceLayer.style.width=rect.width+'px';diceLayer.style.height=(rect.height*.60)+'px';
+ diceLayer.style.right='auto';diceLayer.style.bottom='auto';
+}
+window.addEventListener('resize',placeDiceZone);placeDiceZone();
+function render(){
+ board.querySelectorAll('.tile').forEach(el=>el.remove());
+ board.style.setProperty('--tile-alpha',Math.max(.25,Math.min(1,(current.opacity??80)/100)));
+ if(current.showBoard===false){piece.classList.add('hide');return;}
+ current.labels=Array.isArray(current.labels)?current.labels:defaultLabels;
+ pos.forEach((p,i)=>{
+  const t=document.createElement('div');t.className='tile'+(i===0?' start':'')+(i===visualPosition?' active':'');
+  t.style.left=p.left+'%';t.style.top=p.top+'%';t.style.width=p.width+'%';t.style.height=p.height+'%';
+  const n=document.createElement('div');n.className='num';n.textContent=i+1;
+  const l=document.createElement('div');l.className='label';l.textContent=current.labels[i]||'';
+  t.append(n,l);board.append(t);
+ });
+ const p=pos[visualPosition]||pos[0];
+ piece.style.left=(p.left+p.width/2)+'%';piece.style.top=(p.top+p.height/2)+'%';piece.classList.remove('hide');
+ board.append(piece);
+}
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+function showLanding(index){
+ clearTimeout(menuTimer);
+ const safeIndex=((index%24)+24)%24;
+ landingNum.textContent=(safeIndex+1)+'번 칸';
+ landingLabel.textContent=(current.labels?.[safeIndex]||'');
+ landingOverlay.classList.add('show');
+ menuTimer=setTimeout(()=>landingOverlay.classList.remove('show'),2600);
+}
+async function animateMove(from,to,historyEntry){
+ if(current.showBoard===false){visualPosition=to;render();showLanding(to);return;}
+ moving=true;landingOverlay.classList.remove('show');clearTimeout(menuTimer);
+ let direction=1, steps=(to-from+24)%24;
+ const label=String(historyEntry?.label||'');
+ if(label==='되돌리기'){direction=-1;steps=(from-to+24)%24;}
+ else if(label==='직접 이동'){
+  const forward=(to-from+24)%24, backward=(from-to+24)%24;
+  if(backward<forward){direction=-1;steps=backward;}
+ }
+ if(steps===0){visualPosition=to;render();showLanding(to);moving=false;return;}
+ for(let step=1;step<=steps;step++){
+  visualPosition=(from+direction*step+24*2)%24;
+  render();
+  piece.classList.remove('hop');void piece.offsetWidth;piece.classList.add('hop');
+  await sleep(300);
+ }
+ piece.classList.remove('hop');
+ showLanding(to);
+ moving=false;
+}
+function updateDice(data){
+ if(data.rolling){
+  landingOverlay.classList.remove('show');clearTimeout(menuTimer);
+  diceLayer.classList.add('show');resultEl.classList.add('hidden');die.style.animation='roll .45s linear infinite';
+ }else if(data.diceVisible && data.result){
+  diceLayer.classList.add('show');resultEl.textContent=data.result;resultEl.classList.remove('hidden');die.style.animation='none';
+  const faceRotation={1:'rotateX(0deg) rotateY(0deg)',2:'rotateX(0deg) rotateY(180deg)',3:'rotateX(0deg) rotateY(-90deg)',4:'rotateX(0deg) rotateY(90deg)',5:'rotateX(-90deg) rotateY(0deg)',6:'rotateX(90deg) rotateY(0deg)'};
+  die.style.transform=faceRotation[data.result]||'rotateX(0) rotateY(0)';
+ }else{diceLayer.classList.remove('show');}
+}
+REF.on('value',snap=>{
+ const d=snap.val();if(!d)return;
+ const newPosition=Number.isFinite(Number(d.position))?((Number(d.position)%24)+24)%24:0;
+ current={...current,...d,position:newPosition};
+ placeDiceZone();
+ render();updateDice(current);
+ if(!initialized){visualPosition=newPosition;lastReceivedPosition=newPosition;initialized=true;render();return;}
+ if(newPosition!==lastReceivedPosition){
+  const from=lastReceivedPosition;
+  lastReceivedPosition=newPosition;
+  const latest=(Array.isArray(d.history)?d.history[d.history.length-1]:null);
+  moveQueue=moveQueue.then(()=>animateMove(from,newPosition,latest));
+ }
+});
+</script></body></html>
