@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>말판 컨트롤러</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#0c1220;--panel:#151f30;--line:#2d405b;--text:#f2f6ff;--muted:#a6b5cb;--blue:#537cff;--green:#16b98b;--pink:#e84e87}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#0b1020,#121b2d);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;color:var(--text);padding:14px;max-width:980px;margin:auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}h1{font-size:22px;margin:0}small,.muted{color:var(--muted)}.status{font-size:12px;color:#86e3c2}
+.panel{background:rgba(21,31,48,.96);border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:12px;box-shadow:0 8px 22px #0002}
+h2{font-size:15px;margin:0 0 12px;color:#dfe9ff}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{border:1px solid #425675;background:#24334a;color:white;border-radius:10px;padding:12px 13px;font-weight:800;cursor:pointer;min-height:42px}button.primary{background:linear-gradient(135deg,#4d68ff,#7947e8);border:0}button.good{background:linear-gradient(135deg,#10a982,#23c99a);border:0;color:#041c17}button.danger{background:linear-gradient(135deg,#dc3e73,#f25a8d);border:0}button:active{transform:scale(.99)}input,select{background:#0d1625;border:1px solid #3a4d68;color:white;border-radius:8px;padding:10px;min-height:40px;min-width:0}input[type=number]{width:90px}input[type=range]{padding:0;min-height:unset;width:100%}.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:120px}.field label{font-size:12px;color:var(--muted)}.big{font-size:28px;font-weight:900}.tile-editor{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.edit{display:grid;grid-template-columns:30px 1fr;gap:5px;align-items:center}.edit span{font-size:12px;color:#9fb5d6;text-align:center}.edit input{width:100%;padding:8px;font-size:13px}.history{font-size:13px;line-height:1.8;color:#d5dfef;max-height:120px;overflow:auto}.foot{font-size:12px;color:var(--muted);line-height:1.5}
+@media(max-width:520px){body{padding:9px}.grid{grid-template-columns:1fr 1fr}.panel{padding:11px}.tile-editor{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:19px}}
+</style></head><body>
+<header><div><h1>🎲 말판 컨트롤러</h1><small>방송 화면과 실시간 동기화</small></div><div class="status" id="connection">연결 중…</div></header>
+<div class="grid">
+<section class="panel"><h2>주사위</h2><div class="row"><button class="primary" id="roll">🎲 주사위 굴리기</button><button id="hideDice">주사위 숨기기</button></div><div class="row" style="margin-top:10px"><div class="field"><label>결과 표시 시간</label><select id="duration"><option value="1">1초</option><option value="2" selected>2초</option><option value="3">3초</option><option value="5">5초</option><option value="0">수동 숨김</option></select></div><div><div class="muted">최근 결과</div><div class="big" id="lastResult">—</div></div></div></section>
+<section class="panel"><h2>말 이동 · 현재 위치 <b id="position">1</b></h2><div class="row"><div class="field"><label>이동할 칸 수</label><input id="steps" type="number" min="0" max="999" value="1"></div><button class="good" id="move">이동 확정</button></div><div class="row" style="margin-top:9px"><div class="field"><label>바로 이동할 칸 번호</label><select id="goto"></select></div><button id="go">바로 이동</button><button id="undo">↶ 이전 위치</button></div><div class="foot" style="margin-top:8px">주사위 결과만으로는 말이 자동 이동하지 않습니다. 이동 확정 후에만 위치가 바뀝니다.</div></section>
+</div>
+<section class="panel"><h2>칸 메뉴 설정 <small>24칸 · 문구는 직접 수정</small></h2><div class="tile-editor" id="editor"></div><div class="row" style="margin-top:12px"><button class="primary" id="saveLabels">메뉴 저장</button><button id="loadDefaults">기본 문구 복원</button></div></section>
+<section class="panel"><h2>방송 화면 설정</h2><div class="row"><div class="field"><label>칸 배경 불투명도 <b id="opacityValue">80%</b></label><input id="opacity" type="range" min="25" max="100" value="80"></div></div><div class="row" style="margin-top:10px"><button id="toggleBoard">말판 표시 / 숨기기</button><button id="resetPiece">말 위치 초기화</button><button class="danger" id="resetAll">전체 리셋</button></div></section>
+<section class="panel"><h2>이동 기록</h2><div class="history" id="history">아직 이동 기록이 없습니다.</div><div class="row" style="margin-top:8px"><button id="clearHistory">기록 지우기</button></div></section>
+<div class="foot">기본 투명도 80% · 투명 배경 · 중앙 비움 · 전체 리셋은 확인 후 실행됩니다.</div>
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBDZi7sRmUfh8CwM8kDiUsaQnK1r8",
+  authDomain: "broadcast-widgets.firebaseapp.com",
+  databaseURL: "https://broadcast-widgets-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "broadcast-widgets",
+  storageBucket: "broadcast-widgets.firebasestorage.app",
+  messagingSenderId: "711117372939",
+  appId: "1:711117372939:web:470a6f5acf88691a12510e",
+  measurementId: "G-080YENY338"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const REF = db.ref("dice_board_game");
+
+const defaults=["시작","한 잔","미션","휴식","선물","꽝","선택","벌칙","한 잔","패스","미션","휴식","선물","꽝","한 잔","선택","벌칙","휴식","미션","선물","벌칙","선택","꽝","한 잔"];
+const $=id=>document.getElementById(id);
+let state={labels:defaults,position:0,opacity:80,diceVisible:false,rolling:false,result:null,showBoard:true,history:[],previous:[]};
+let rollingLocal=false;
+const editor=$('editor');
+defaults.forEach((v,i)=>{const wrap=document.createElement('label');wrap.className='edit';const n=document.createElement('span');n.textContent=i+1;const inp=document.createElement('input');inp.maxLength=18;inp.value=v;inp.dataset.index=i;inp.setAttribute('aria-label',(i+1)+'번 칸 문구');wrap.append(n,inp);editor.append(wrap);});
+for(let i=1;i<=24;i++){const o=document.createElement('option');o.value=i-1;o.textContent=i+'번 칸';$('goto').append(o);}
+function update(patch){return REF.update({...patch,updatedAt:Date.now()});}
+function setHistory(items){$('history').innerHTML='';if(!items.length){$('history').textContent='아직 이동 기록이 없습니다.';return;}items.slice().reverse().slice(0,12).forEach(x=>{const d=document.createElement('div');d.textContent=`${x.from+1}번 → ${x.to+1}번 (${x.label})`; $('history').append(d);});}
+REF.on('value',snap=>{const d=snap.val();if(d)state={...state,...d};$('connection').textContent='● 연결됨';$('position').textContent=(state.position||0)+1;$('lastResult').textContent=state.result||'—';$('opacity').value=state.opacity??80;$('opacityValue').textContent=(state.opacity??80)+'%';$('toggleBoard').textContent=state.showBoard===false?'말판 표시하기':'말판 숨기기';$('goto').value=state.position||0;setHistory(state.history||[]);});
+$('roll').onclick=async()=>{
+ if(rollingLocal)return;rollingLocal=true;
+ const value=1+Math.floor(Math.random()*6), duration=Number($('duration').value);
+ await update({rolling:true,diceVisible:true,result:null});
+ setTimeout(async()=>{await update({rolling:false,diceVisible:true,result:value});rollingLocal=false;if(duration>0)setTimeout(()=>REF.update({diceVisible:false,rolling:false}),duration*1000);},1500);
+};
+$('hideDice').onclick=()=>update({diceVisible:false,rolling:false});
+$('move').onclick=async()=>{const steps=Math.max(0,Math.min(999,parseInt($('steps').value||'0',10)));const from=state.position||0,to=(from+steps)%24;const hist=[...(state.history||[]),{from,to,label:`+${steps}칸`}].slice(-30);const prev=[...(state.previous||[]),from].slice(-20);await update({position:to,history:hist,previous:prev});};
+$('go').onclick=async()=>{const from=state.position||0,to=Number($('goto').value);const hist=[...(state.history||[]),{from,to,label:'직접 이동'}].slice(-30);const prev=[...(state.previous||[]),from].slice(-20);await update({position:to,history:hist,previous:prev});};
+$('undo').onclick=async()=>{const prev=[...(state.previous||[])];if(!prev.length){alert('되돌릴 이전 위치가 없습니다.');return;}const to=prev.pop(),from=state.position||0;const hist=[...(state.history||[]),{from,to,label:'되돌리기'}].slice(-30);await update({position:to,previous:prev,history:hist});};
+$('saveLabels').onclick=()=>{const labels=[...editor.querySelectorAll('input')].map(x=>x.value.trim().slice(0,18));update({labels});alert('칸 메뉴를 저장했어요.');};
+$('loadDefaults').onclick=()=>{if(!confirm('칸 문구를 기본값으로 복원할까요?'))return;editor.querySelectorAll('input').forEach((x,i)=>x.value=defaults[i]);};
+$('opacity').oninput=()=>{$('opacityValue').textContent=$('opacity').value+'%';};
+$('opacity').onchange=()=>update({opacity:Number($('opacity').value)});
+$('toggleBoard').onclick=()=>update({showBoard:state.showBoard===false});
+$('resetPiece').onclick=()=>{if(!confirm('말을 1번 칸으로 되돌릴까요?'))return;update({position:0,previous:[],history:[...(state.history||[]),{from:state.position||0,to:0,label:'말 위치 초기화'}].slice(-30)});};
+$('resetAll').onclick=()=>{if(!confirm('전체 리셋할까요? 말 위치와 주사위 표시, 이동 기록을 초기화합니다. 칸 메뉴는 유지됩니다.'))return;update({position:0,previous:[],history:[],diceVisible:false,rolling:false,result:null,showBoard:true,opacity:80});};
+$('clearHistory').onclick=()=>{if(confirm('이동 기록을 지울까요?'))update({history:[]});};
+</script></body></html>
